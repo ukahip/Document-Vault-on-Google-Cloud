@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://storage.googleapis.com; img-src 'self' data: blob:;">
 <title>FoxVault — Secure Document Vault</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Figtree:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -58,12 +59,10 @@ body {
   line-height: 1.6;
 }
 
-/* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
 
-/* ─── BACKGROUND ─── */
 .bg {
   position: fixed; inset: 0; pointer-events: none; z-index: 0;
   background:
@@ -80,7 +79,6 @@ body {
   opacity: 0.35;
 }
 
-/* ─── SIDEBAR ─── */
 .sidebar {
   width: var(--sidebar);
   height: 100vh;
@@ -206,7 +204,6 @@ body {
 }
 .logout-btn:hover { background: var(--rose-d); color: var(--rose); }
 
-/* ─── MAIN ─── */
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; z-index: 1; }
 
 .topbar {
@@ -237,12 +234,10 @@ body {
 }
 .notif-btn:hover { background: var(--ink-3); color: var(--t2); }
 
-/* ─── CONTENT ─── */
 .content { flex: 1; overflow-y: auto; padding: 28px; }
 .page { display: none; }
 .page.active { display: block; animation: fadeUp 0.3s var(--ease) both; }
 
-/* ─── STAT CARDS ─── */
 .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
 .stat-card {
   background: var(--surface);
@@ -264,7 +259,6 @@ body {
 .stat-sub { font-size: 13px; color: var(--t3); }
 .stat-icon { position: absolute; top: 16px; right: 16px; font-size: 20px; opacity: 0.5; }
 
-/* ─── SECTION HEADER ─── */
 .sec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .sec-title {
   font-family: var(--font-head);
@@ -281,7 +275,6 @@ body {
 .sec-link { font-size: 13px; color: var(--t3); cursor: pointer; transition: color 0.15s; }
 .sec-link:hover { color: var(--emerald); }
 
-/* ─── UPLOAD ZONE ─── */
 .upload-zone {
   border: 2px dashed var(--border-2);
   border-radius: var(--r-xl);
@@ -315,7 +308,6 @@ body {
 .chip-b { color: var(--sky); background: var(--sky-d); border-color: rgba(56,189,248,0.2); }
 .chip-y { color: var(--amber); background: var(--amber-d); border-color: rgba(245,158,11,0.2); }
 
-/* ─── PROGRESS ─── */
 .prog-wrap {
   display: none;
   background: var(--surface);
@@ -331,7 +323,6 @@ body {
 .prog-track { height: 4px; background: var(--ink-4); border-radius: 4px; overflow: hidden; }
 .prog-fill { height: 100%; background: linear-gradient(90deg, #059669, var(--emerald)); border-radius: 4px; width: 0; transition: width 0.25s ease; box-shadow: 0 0 8px rgba(16,185,129,0.5); }
 
-/* ─── DOCS TABLE ─── */
 .docs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); overflow: hidden; }
 .docs-head {
   display: grid; grid-template-columns: 40px 1fr 110px 80px 100px;
@@ -384,7 +375,6 @@ body {
 .empty-state .empty-icon { font-size: 40px; margin-bottom: 14px; opacity: 0.3; }
 .empty-state p { font-size: 15px; }
 
-/* ─── AUDIT ─── */
 .audit-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); overflow: hidden; }
 .audit-entry {
   display: flex; gap: 14px;
@@ -405,7 +395,6 @@ body {
 .a-event strong { color: var(--t1); }
 .a-meta { font-family: var(--font-mono); font-size: 11px; color: var(--t4); }
 
-/* ─── INFRASTRUCTURE (TECH STACK) ─── */
 .stack-intro { font-size: 14px; color: var(--t2); margin-bottom: 24px; line-height: 1.7; max-width: 680px; }
 .stack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .stack-card {
@@ -431,33 +420,6 @@ body {
   border: 1px solid; display: inline-block;
 }
 
-/* ─── SETTINGS (SECURITY ONLY) ─── */
-.set-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 22px 24px; }
-.set-title { font-family: var(--font-head); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; color: var(--t2); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
-.toggle-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 0; border-bottom: 1px solid var(--border);
-}
-.toggle-row:last-child { border-bottom: none; }
-.tgl-info { font-size: 15px; color: var(--t1); margin-bottom: 3px; }
-.tgl-sub { font-size: 13px; color: var(--t3); }
-.toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; }
-.tgl-slider {
-  position: absolute; inset: 0;
-  background: var(--ink-4); border: 1px solid var(--border-2);
-  border-radius: 11px; cursor: pointer; transition: all 0.2s;
-}
-.toggle input:checked + .tgl-slider { background: var(--emerald-d); border-color: rgba(16,185,129,0.4); }
-.tgl-slider::after {
-  content: ''; position: absolute;
-  width: 16px; height: 16px; left: 2px; top: 2px;
-  background: var(--t3); border-radius: 50%;
-  transition: all 0.2s;
-}
-.toggle input:checked + .tgl-slider::after { transform: translateX(16px); background: var(--emerald); box-shadow: 0 0 8px var(--emerald); }
-
-/* ─── MODAL ─── */
 .modal-bg { position: fixed; inset: 0; background: rgba(5,8,16,0.85); backdrop-filter: blur(14px); z-index: 100; display: none; align-items: center; justify-content: center; }
 .modal-bg.open { display: flex; animation: fadeIn 0.18s ease; }
 .modal { background: var(--ink-2); border: 1px solid var(--border-2); border-radius: var(--r-xl); padding: 32px 36px; max-width: 450px; width: 90%; box-shadow: 0 24px 80px rgba(0,0,0,0.7); animation: modalPop 0.25s cubic-bezier(0.34,1.56,0.64,1); }
@@ -476,7 +438,6 @@ body {
 .mbtn-primary { background: var(--emerald-d); border-color: rgba(16,185,129,0.35); color: var(--emerald); }
 .mbtn-primary:hover { background: var(--emerald-b); }
 
-/* ─── TOAST ─── */
 .toasts { position: fixed; top: 18px; right: 18px; z-index: 999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast {
   background: var(--ink-2); border: 1px solid var(--border-2);
@@ -492,7 +453,6 @@ body {
 .t-title { font-family: var(--font-head); font-weight: 700; font-size: 13px; }
 .t-sub { font-size: 12px; color: var(--t3); margin-top: 1px; }
 
-/* ─── MOBILE BOTTOM NAV ─── */
 .bottom-nav {
   display: none;
   position: fixed; bottom: 0; left: 0; right: 0;
@@ -514,7 +474,6 @@ body {
 .bnav-icon { font-size: 20px; }
 .bnav-label { font-size: 10px; font-weight: 500; }
 
-/* ─── ANIMATIONS ─── */
 @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes toastIn { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
@@ -522,7 +481,6 @@ body {
 @keyframes modalPop { from { opacity: 0; transform: scale(0.94) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--emerald); } 50% { opacity: 0.5; box-shadow: 0 0 4px var(--emerald); } }
 
-/* ─── RESPONSIVE ─── */
 @media (max-width: 960px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .stack-grid { grid-template-columns: repeat(2, 1fr); }
@@ -557,7 +515,6 @@ body {
 <body>
 <div class="bg"></div>
 
-<!-- ── SIDEBAR (desktop) ── -->
 <aside class="sidebar">
   <div class="sidebar-brand">
     <div class="brand-lockup">
@@ -575,14 +532,13 @@ body {
     <div class="nav-label">Security</div>
     <a class="nav-item" onclick="nav('audit',this)"><span class="nav-icon">📋</span><span>Audit Log</span></a>
     <a class="nav-item" onclick="nav('infra',this)"><span class="nav-icon">☁️</span><span>Infrastructure</span></a>
-
   </nav>
 
   <div class="sidebar-foot">
     <div class="user-card">
       <div class="user-av">👤</div>
       <div>
-        <div class="user-email" id="userEmail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="83f6f0e6f1c3e6fbe2eef3efe6ade0ecee">[email&#160;protected]</a></div>
+        <div class="user-email" id="userEmail">user@example.com</div>
         <div class="user-role">Authenticated User</div>
       </div>
     </div>
@@ -590,7 +546,6 @@ body {
   </div>
 </aside>
 
-<!-- ── MAIN ── -->
 <div class="main">
   <div class="topbar">
     <div>
@@ -605,7 +560,6 @@ body {
 
   <div class="content">
 
-    <!-- DASHBOARD -->
     <div class="page active" id="pg-dashboard">
       <div class="stats-row">
         <div class="stat-card" style="--c:var(--emerald)">
@@ -647,7 +601,7 @@ body {
           <span class="chip chip-y">⏳ 7-Year Hold</span>
         </div>
       </div>
-      <input type="file" id="fi1" accept=".pdf" onchange="handleFile(event)" style="display:none"/>
+      <input type="file" id="fi1" accept=".pdf,application/pdf" onchange="handleFile(event)" style="display:none"/>
       <div class="prog-wrap" id="progBar">
         <div class="prog-top"><span class="prog-file" id="progFile">file.pdf</span><span class="prog-pct" id="progPct">0%</span></div>
         <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
@@ -663,7 +617,6 @@ body {
       </div>
     </div>
 
-    <!-- DOCUMENTS -->
     <div class="page" id="pg-documents">
       <div class="sec-header" style="margin-bottom:18px">
         <div class="sec-title"><div class="sec-icon">📂</div>ALL DOCUMENTS</div>
@@ -675,7 +628,6 @@ body {
       </div>
     </div>
 
-    <!-- UPLOAD -->
     <div class="page" id="pg-upload">
       <div class="sec-header" style="margin-bottom:18px">
         <div class="sec-title"><div class="sec-icon">⬆</div>UPLOAD DOCUMENT</div>
@@ -690,10 +642,9 @@ body {
           <span class="chip chip-y">🔒 7-Year Retention</span>
         </div>
       </div>
-      <input type="file" id="fi2" accept=".pdf" onchange="handleFile(event)" style="display:none"/>
+      <input type="file" id="fi2" accept=".pdf,application/pdf" onchange="handleFile(event)" style="display:none"/>
     </div>
 
-    <!-- AUDIT LOG -->
     <div class="page" id="pg-audit">
       <div class="sec-header" style="margin-bottom:18px">
         <div class="sec-title"><div class="sec-icon">📋</div>AUDIT LOG</div>
@@ -710,7 +661,6 @@ body {
       </div>
     </div>
 
-    <!-- INFRASTRUCTURE (TECH STACK) -->
     <div class="page" id="pg-infra">
       <div class="sec-header" style="margin-bottom:12px">
         <div class="sec-title"><div class="sec-icon">☁</div>TECH STACK</div>
@@ -774,11 +724,9 @@ body {
       </div>
     </div>
 
+  </div>
+</div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
-
-<!-- ── MOBILE BOTTOM NAV ── -->
 <nav class="bottom-nav">
   <div class="bottom-nav-inner">
     <button class="bnav-item active" id="bn-dashboard" onclick="nav('dashboard',null);setBnav('dashboard')">
@@ -799,7 +747,6 @@ body {
   </div>
 </nav>
 
-<!-- ── MODALS ── -->
 <div class="modal-bg" id="delModal">
   <div class="modal">
     <div class="modal-title">🗑 Delete Document</div>
@@ -827,13 +774,14 @@ body {
 
 <div class="toasts" id="toastArea"></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-/* ── STATE ── */
+<script>
 const S = { docs: [], events: 1, storage: 0 };
 let pendingDel = null, pendingShare = null;
+let GATEWAY_URL = '';
+let isCheckingSession = false;
 
-const TITLES = { dashboard:'DASHBOARD', documents:'DOCUMENTS', upload:'UPLOAD', audit:'AUDIT LOG', infra:'INFRASTRUCTURE', settings:'SETTINGS' };
-const CRUMBS = { dashboard:'Overview', documents:'Documents', upload:'Upload New', audit:'Audit Log', infra:'Tech Stack', settings:'Security Settings' };
+const TITLES = { dashboard:'DASHBOARD', documents:'DOCUMENTS', upload:'UPLOAD', audit:'AUDIT LOG', infra:'INFRASTRUCTURE' };
+const CRUMBS = { dashboard:'Overview', documents:'Documents', upload:'Upload New', audit:'Audit Log', infra:'Tech Stack' };
 
 function uid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -842,7 +790,23 @@ function uid() {
   });
 }
 
-/* ── NAVIGATION ── */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function loadConfig() {
+  try {
+    const res = await fetch('/api/config');
+    const cfg = await res.json();
+    GATEWAY_URL = cfg.gatewayUrl || '';
+  } catch(e) {
+    console.error('Could not load config:', e);
+    addAudit('sy', 'CONFIG ERROR — Failed to load gateway configuration');
+  }
+}
+
 function nav(page, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('pg-' + page).classList.add('active');
@@ -858,7 +822,6 @@ function setBnav(page) {
   if (el) el.classList.add('active');
 }
 
-/* ── STATS ── */
 function refreshStats() {
   document.getElementById('s-total').textContent  = S.docs.length;
   document.getElementById('s-enc').textContent    = S.docs.length;
@@ -867,7 +830,6 @@ function refreshStats() {
   document.getElementById('navBadge').textContent = S.docs.length;
 }
 
-/* ── RENDER DOCS ── */
 function renderDocs() {
   ['recentList', 'allList'].forEach((id, idx) => {
     const el = document.getElementById(id);
@@ -880,43 +842,50 @@ function renderDocs() {
       <div class="doc-row" style="animation-delay:${i*0.04}s">
         <div class="doc-ficon">📄</div>
         <div style="overflow:hidden">
-          <div class="doc-name" title="${doc.name}">${doc.name}</div>
-          <div class="doc-id">${doc.id.substring(0,26)}…</div>
+          <div class="doc-name" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</div>
+          <div class="doc-id">${escapeHtml(doc.id.substring(0,26))}…</div>
         </div>
         <div><span class="enc-badge">✓ CMEK</span></div>
-        <div class="doc-size">${doc.size} MB</div>
+        <div class="doc-size">${escapeHtml(doc.size.toString())} MB</div>
         <div class="doc-acts">
-          <button class="act-btn dl" title="Download" onclick="openShare('${doc.id}','${doc.name}')">⬇</button>
-          <button class="act-btn sh" title="Share link" onclick="openShare('${doc.id}','${doc.name}')">🔗</button>
-          <button class="act-btn rm" title="Delete" onclick="openDel('${doc.id}','${doc.name}',${S.docs.indexOf(doc)})">🗑</button>
+          <button class="act-btn dl" title="Download" onclick="openShare('${escapeHtml(doc.id)}','${escapeHtml(doc.name)}')">⬇</button>
+          <button class="act-btn sh" title="Share link" onclick="openShare('${escapeHtml(doc.id)}','${escapeHtml(doc.name)}')">🔗</button>
+          <button class="act-btn rm" title="Delete" onclick="openDel('${escapeHtml(doc.id)}','${escapeHtml(doc.name)}',${S.docs.indexOf(doc)})">🗑</button>
         </div>
       </div>`).join('');
   });
   refreshStats();
 }
 
-/* ── UPLOAD ── */
 function dzOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag'); }
 function dzOut(id) { document.getElementById(id).classList.remove('drag'); }
 function dzDrop(e, id) { e.preventDefault(); dzOut(id); if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]); }
 function handleFile(e) { if (e.target.files.length) processFile(e.target.files[0]); e.target.value = ''; }
 
-function processFile(file) {
-  if (!file.name.toLowerCase().endsWith('.pdf')) {
+async function processFile(file) {
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
     toast('❌', 'Invalid File', 'Only PDF files are accepted');
-    addAudit('dl', 'REJECTED — <strong>' + file.name + '</strong> · not a PDF');
+    addAudit('dl', 'REJECTED — <strong>' + escapeHtml(file.name) + '</strong> · not a PDF');
     return;
   }
-  const size = parseFloat(((file.size / (1024 * 1024)) || (Math.random() * 4 + 0.5)).toFixed(2));
-  const doc = { id: uid(), name: file.name, size };
+  
+  const maxSize = 50 * 1024 * 1024;
+  if (file.size > maxSize) {
+    toast('❌', 'File Too Large', 'Maximum file size is 50MB');
+    addAudit('dl', 'REJECTED — <strong>' + escapeHtml(file.name) + '</strong> · exceeds 50MB limit');
+    return;
+  }
+  
+  const size = parseFloat((file.size / (1024 * 1024)).toFixed(2));
+  const doc = { id: uid(), name: file.name, size, timestamp: Date.now() };
 
   const bar = document.getElementById('progBar');
   const fill = document.getElementById('progFill');
   const pct = document.getElementById('progPct');
-  document.getElementById('progFile').textContent = file.name;
+  document.getElementById('progFile').textContent = escapeHtml(file.name);
   bar.classList.add('show');
   fill.style.width = '0%';
-  addAudit('up', 'UPLOAD STARTED — <strong>' + file.name + '</strong> · ' + size + ' MB');
+  addAudit('up', 'UPLOAD STARTED — <strong>' + escapeHtml(file.name) + '</strong> · ' + size + ' MB');
 
   let p = 0;
   const t = setInterval(() => {
@@ -929,8 +898,10 @@ function processFile(file) {
         S.docs.unshift(doc);
         S.storage = parseFloat((S.storage + doc.size).toFixed(2));
         renderDocs();
-        addAudit('up', 'UPLOAD COMPLETE — <strong>' + file.name + '</strong> · encrypted · CMEK');
-        toast('✅', 'Document Encrypted', file.name + ' is now in the vault');
+        addAudit('up', 'UPLOAD COMPLETE — <strong>' + escapeHtml(file.name) + '</strong> · encrypted · CMEK');
+        toast('✅', 'Document Encrypted', escapeHtml(file.name) + ' is now in the vault');
+        
+        saveDocs();
       }, 400);
     } else {
       fill.style.width = p + '%';
@@ -939,7 +910,30 @@ function processFile(file) {
   }, 90);
 }
 
-/* ── AUDIT ── */
+function saveDocs() {
+  try {
+    localStorage.setItem('fv_docs', JSON.stringify(S.docs));
+    localStorage.setItem('fv_storage', S.storage.toString());
+  } catch(e) {
+    console.error('Failed to save docs:', e);
+  }
+}
+
+function loadDocs() {
+  try {
+    const saved = localStorage.getItem('fv_docs');
+    const savedStorage = localStorage.getItem('fv_storage');
+    if (saved) {
+      S.docs = JSON.parse(saved);
+    }
+    if (savedStorage) {
+      S.storage = parseFloat(savedStorage);
+    }
+  } catch(e) {
+    console.error('Failed to load docs:', e);
+  }
+}
+
 function addAudit(type, msg) {
   S.events++;
   const stream = document.getElementById('auditStream');
@@ -952,62 +946,146 @@ function addAudit(type, msg) {
   while (stream.children.length > 20) stream.removeChild(stream.lastChild);
   refreshStats();
 }
+
 function clearAudit() {
   document.getElementById('auditStream').innerHTML = '<div class="audit-entry"><div class="a-dot sy"></div><div><div class="a-event"><strong>LOG CLEARED</strong> — display reset</div><div class="a-meta">Events persist in Cloud Audit Logs and BigQuery</div></div></div>';
 }
 
-/* ── MODALS ── */
 function openDel(id, name, idx) { pendingDel = { id, name, idx }; document.getElementById('delId').value = id; document.getElementById('delModal').classList.add('open'); }
 function openShare(id, name) { pendingShare = { id, name }; document.getElementById('shareId').value = id; document.getElementById('shareModal').classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); pendingDel = null; pendingShare = null; }
+
 function confirmDel() {
   if (!pendingDel) return;
   const { name, idx } = pendingDel;
-  S.storage = parseFloat((S.storage - S.docs[idx].size).toFixed(2));
+  S.storage = Math.max(0, parseFloat((S.storage - S.docs[idx].size).toFixed(2)));
   S.docs.splice(idx, 1);
   closeModal('delModal');
   renderDocs();
-  addAudit('dl', 'DELETE — <strong>' + name + '</strong> removed from vault');
-  toast('⚠️', 'Document Deleted', name + ' removed from vault');
+  saveDocs();
+  addAudit('dl', 'DELETE — <strong>' + escapeHtml(name) + '</strong> removed from vault');
+  toast('⚠️', 'Document Deleted', escapeHtml(name) + ' removed from vault');
 }
+
 function confirmShare() {
   if (!pendingShare) return;
   closeModal('shareModal');
-  addAudit('dn', 'SIGNED URL — <strong>' + pendingShare.name + '</strong> · 5 min expiry · SA signed');
+  addAudit('dn', 'SIGNED URL — <strong>' + escapeHtml(pendingShare.name) + '</strong> · 5 min expiry · SA signed');
   toast('✅', 'URL Generated', 'Signed URL ready · expires in 5 minutes');
 }
+
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
 
-/* ── TOAST ── */
 function toast(icon, title, sub) {
   const area = document.getElementById('toastArea');
   const el = document.createElement('div');
   el.className = 'toast';
-  el.innerHTML = `<div class="t-icon">${icon}</div><div><div class="t-title">${title}</div><div class="t-sub">${sub}</div></div>`;
+  el.innerHTML = `<div class="t-icon">${escapeHtml(icon)}</div><div><div class="t-title">${escapeHtml(title)}</div><div class="t-sub">${escapeHtml(sub)}</div></div>`;
   area.appendChild(el);
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 220); }, 3500);
 }
 
-/* ── AUTH ── */
 function logout() {
+  if (isCheckingSession) return;
+  isCheckingSession = true;
+  
   localStorage.removeItem('fv_token');
   localStorage.removeItem('fv_refresh');
   localStorage.removeItem('fv_email');
-  window.location.href = 'index.html';
+  localStorage.removeItem('fv_expires_at');
+  localStorage.removeItem('fv_token_issued');
+  
+  window.location.replace('index.html');
 }
 
-/* ── SESSION ── */
-function checkSession() {
-  const token = localStorage.getItem('fv_token');
-  if (!token) { window.location.href = 'index.html'; return; }
-  const email = localStorage.getItem('fv_email') || '';
-  const emailEl = document.getElementById('userEmail');
-  if (emailEl && email) emailEl.textContent = email;
+async function refreshTokenIfNeeded() {
+  const expiresAt = localStorage.getItem('fv_expires_at');
+  if (!expiresAt) return false;
+  
+  const now = Date.now();
+  const expires = parseInt(expiresAt);
+  
+  if (expires - now < 300000) {
+    const refreshToken = localStorage.getItem('fv_refresh');
+    if (!refreshToken) return false;
+    
+    try {
+      const API_KEY = null;
+      const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken
+        })
+      });
+      
+      const data = await res.json();
+      if (data.id_token) {
+        localStorage.setItem('fv_token', data.id_token);
+        localStorage.setItem('fv_expires_at', (Date.now() + (data.expires_in * 1000)).toString());
+        return true;
+      }
+    } catch(e) {
+      console.error('Token refresh failed:', e);
+    }
+    return false;
+  }
+  return true;
 }
 
-/* ── INIT ── */
+async function checkSession() {
+  if (isCheckingSession) return;
+  isCheckingSession = true;
+  
+  try {
+    const token = localStorage.getItem('fv_token');
+    const expiresAt = localStorage.getItem('fv_expires_at');
+    const email = localStorage.getItem('fv_email');
+    
+    if (!token) {
+      window.location.replace('index.html');
+      return;
+    }
+    
+    if (expiresAt) {
+      const now = Date.now();
+      if (now >= parseInt(expiresAt)) {
+        const refreshed = await refreshTokenIfNeeded();
+        if (!refreshed) {
+          clearAuthData();
+          window.location.replace('index.html');
+          return;
+        }
+      }
+    }
+    
+    const emailEl = document.getElementById('userEmail');
+    if (emailEl && email) {
+      emailEl.textContent = escapeHtml(email);
+    }
+    
+    loadDocs();
+    renderDocs();
+    
+  } finally {
+    isCheckingSession = false;
+  }
+}
+
+function clearAuthData() {
+  localStorage.removeItem('fv_token');
+  localStorage.removeItem('fv_refresh');
+  localStorage.removeItem('fv_email');
+  localStorage.removeItem('fv_expires_at');
+  localStorage.removeItem('fv_token_issued');
+}
+
 (function() {
+  loadConfig();
   checkSession();
-  renderDocs();
   addAudit('sy', 'SYSTEM INIT — FoxVault GCP started');
 })();
+</script>
+</body>
+</html>
