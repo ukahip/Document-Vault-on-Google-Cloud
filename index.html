@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://identitytoolkit.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://identitytoolkit.googleapis.com; img-src 'self' data:;">
 <title>FoxVault — Sign In</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Figtree:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -32,7 +33,6 @@
 }
 html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(--t1);}
 
-/* ── BACKGROUND ── */
 .bg{position:fixed;inset:0;pointer-events:none;z-index:0;}
 .bg::before{
   content:'';position:absolute;inset:0;
@@ -49,7 +49,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
   background-size:56px 56px;
 }
 
-/* ── LAYOUT ── */
 .wrap{
   position:relative;z-index:1;
   min-height:100vh;
@@ -57,7 +56,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
   grid-template-columns:1fr 1fr;
 }
 
-/* ── LEFT PANEL ── */
 .left{
   display:flex;flex-direction:column;justify-content:space-between;
   padding:52px 56px;
@@ -112,7 +110,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
   border-radius:20px;padding:4px 11px;font-size:11px;color:var(--sky);
 }
 
-/* ── RIGHT PANEL ── */
 .right{
   display:flex;align-items:center;justify-content:center;
   padding:52px 56px;
@@ -127,7 +124,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
   animation:cardIn 0.5s var(--ease) both;
 }
 
-/* TABS */
 .tabs{display:flex;gap:4px;background:var(--ink-3);border-radius:12px;padding:4px;margin-bottom:32px;}
 .tab{
   flex:1;padding:10px;border-radius:9px;
@@ -137,7 +133,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
 }
 .tab.active{background:var(--ink-2);color:var(--t1);box-shadow:0 2px 8px rgba(0,0,0,0.35);}
 
-/* FORM */
 .form-section{display:none;}
 .form-section.active{display:block;animation:fadeUp 0.25s var(--ease) both;}
 .form-title{font-family:var(--font-h);font-size:22px;font-weight:800;margin-bottom:6px;}
@@ -173,7 +168,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
 .submit-btn:disabled{opacity:0.55;cursor:not-allowed;transform:none;}
 .btn-text{display:flex;align-items:center;justify-content:center;gap:8px;}
 
-/* ERROR / SUCCESS */
 .alert{
   border-radius:10px;padding:12px 15px;
   font-size:14px;margin-bottom:18px;display:none;
@@ -184,26 +178,22 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
 .alert-err{background:var(--rose-d);border:1px solid rgba(244,63,94,0.25);color:#FDA4AF;}
 .alert-ok{background:var(--emerald-d);border:1px solid rgba(16,185,129,0.25);color:#6EE7B7;}
 
-/* SPINNER */
 .spinner{
   width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);
   border-top-color:#fff;border-radius:50%;
   animation:spin 0.7s linear infinite;display:none;flex-shrink:0;
 }
 
-/* ── ANIMATIONS ── */
 @keyframes cardIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* ── MOBILE ── */
 @media(max-width:800px){
   .wrap{grid-template-columns:1fr;}
   .left{display:none;}
   .right{padding:28px 20px;align-items:flex-start;padding-top:48px;}
   .auth-card{max-width:100%;}
   .auth-card-inner{padding:30px 24px;}
-  /* Show mini logo on mobile */
   .right::before{
     content:'🔐  FoxVault';
     display:block;position:absolute;top:20px;left:24px;
@@ -218,7 +208,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
 <div class="bg"></div>
 
 <div class="wrap">
-  <!-- LEFT -->
   <div class="left">
     <div class="logo-row">
       <div class="logo-icon">🔐</div>
@@ -252,7 +241,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
     </div>
   </div>
 
-  <!-- RIGHT -->
   <div class="right">
     <div class="auth-card">
       <div class="auth-card-inner">
@@ -261,7 +249,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
           <button class="tab" onclick="switchTab('signup')">Create Account</button>
         </div>
 
-        <!-- SIGN IN -->
         <div class="form-section active" id="fs-signin">
           <div class="form-title">Welcome back</div>
           <div class="form-sub">Sign in to access your encrypted vault.</div>
@@ -291,7 +278,6 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
           </button>
         </div>
 
-        <!-- SIGN UP -->
         <div class="form-section" id="fs-signup">
           <div class="form-title">Create account</div>
           <div class="form-sub">Register to get access to the vault.</div>
@@ -336,8 +322,9 @@ html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(
 
 <script>
 let API_KEY = null;
+let lastAttempt = 0;
+const RATE_LIMIT_MS = 2000;
 
-/* ── LOAD CONFIG FROM VERCEL FUNCTION ── */
 async function loadConfig() {
   try {
     const res = await fetch('/api/config');
@@ -348,13 +335,28 @@ async function loadConfig() {
   }
 }
 
-/* ── CHECK ALREADY LOGGED IN ── */
 function checkSession() {
   const token = localStorage.getItem('fv_token');
-  if (token) window.location.href = 'dashboard.html';
+  const expiresAt = localStorage.getItem('fv_expires_at');
+  
+  if (token && expiresAt) {
+    const now = Date.now();
+    if (now < parseInt(expiresAt)) {
+      window.location.replace('dashboard.html');
+    } else {
+      clearAuthData();
+    }
+  }
 }
 
-/* ── TABS ── */
+function clearAuthData() {
+  localStorage.removeItem('fv_token');
+  localStorage.removeItem('fv_refresh');
+  localStorage.removeItem('fv_email');
+  localStorage.removeItem('fv_expires_at');
+  localStorage.removeItem('fv_token_issued');
+}
+
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (i===0 && tab==='signin') || (i===1 && tab==='signup')));
   document.getElementById('fs-signin').classList.toggle('active', tab==='signin');
@@ -379,15 +381,43 @@ function setLoading(prefix, loading) {
   document.getElementById(prefix+'-label').textContent = loading ? (prefix==='si'?'Signing in…':'Creating account…') : (prefix==='si'?'Sign In':'Create Account');
 }
 
-/* ── SIGN IN ── */
-async function signIn() {
-  clearErrors();
-  const email = document.getElementById('si-email').value.trim();
-  const pass  = document.getElementById('si-pass').value;
+function sanitizeInput(input) {
+  return input.replace(/[<>\"']/g, '');
+}
 
-  if (!email) { showErr('si','Please enter your email address.'); document.getElementById('si-email').classList.add('err'); return; }
-  if (!pass)  { showErr('si','Please enter your password.'); document.getElementById('si-pass').classList.add('err'); return; }
-  if (!API_KEY) { showErr('si','Authentication service unavailable. Please try again.'); return; }
+function checkRateLimit() {
+  const now = Date.now();
+  if (now - lastAttempt < RATE_LIMIT_MS) {
+    return false;
+  }
+  lastAttempt = now;
+  return true;
+}
+
+async function signIn() {
+  if (!checkRateLimit()) {
+    showErr('si', 'Please wait a moment before trying again.');
+    return;
+  }
+  
+  clearErrors();
+  const email = sanitizeInput(document.getElementById('si-email').value.trim());
+  const pass = document.getElementById('si-pass').value;
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { 
+    showErr('si','Please enter a valid email address.'); 
+    document.getElementById('si-email').classList.add('err'); 
+    return; 
+  }
+  if (!pass || pass.length < 8)  { 
+    showErr('si','Password must be at least 8 characters.'); 
+    document.getElementById('si-pass').classList.add('err'); 
+    return; 
+  }
+  if (!API_KEY) { 
+    showErr('si','Authentication service unavailable. Please try again.'); 
+    return; 
+  }
 
   setLoading('si', true);
   try {
@@ -407,10 +437,14 @@ async function signIn() {
       return;
     }
 
+    const expiresAt = Date.now() + (data.expiresIn * 1000);
     localStorage.setItem('fv_token', data.idToken);
     localStorage.setItem('fv_refresh', data.refreshToken);
     localStorage.setItem('fv_email', data.email);
-    window.location.href = 'dashboard.html';
+    localStorage.setItem('fv_expires_at', expiresAt.toString());
+    localStorage.setItem('fv_token_issued', Date.now().toString());
+    
+    window.location.replace('dashboard.html');
 
   } catch(e) {
     showErr('si', 'Network error. Check your connection and try again.');
@@ -419,17 +453,36 @@ async function signIn() {
   }
 }
 
-/* ── SIGN UP ── */
 async function signUp() {
+  if (!checkRateLimit()) {
+    showErr('su', 'Please wait a moment before trying again.');
+    return;
+  }
+  
   clearErrors();
-  const email = document.getElementById('su-email').value.trim();
-  const pass  = document.getElementById('su-pass').value;
+  const email = sanitizeInput(document.getElementById('su-email').value.trim());
+  const pass = document.getElementById('su-pass').value;
   const pass2 = document.getElementById('su-pass2').value;
 
-  if (!email) { showErr('su','Please enter your email address.'); document.getElementById('su-email').classList.add('err'); return; }
-  if (!pass || pass.length < 8) { showErr('su','Password must be at least 8 characters.'); document.getElementById('su-pass').classList.add('err'); return; }
-  if (pass !== pass2) { showErr('su','Passwords do not match.'); document.getElementById('su-pass2').classList.add('err'); return; }
-  if (!API_KEY) { showErr('su','Authentication service unavailable. Please try again.'); return; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { 
+    showErr('su','Please enter a valid email address.'); 
+    document.getElementById('su-email').classList.add('err'); 
+    return; 
+  }
+  if (!pass || pass.length < 8) { 
+    showErr('su','Password must be at least 8 characters.'); 
+    document.getElementById('su-pass').classList.add('err'); 
+    return; 
+  }
+  if (pass !== pass2) { 
+    showErr('su','Passwords do not match.'); 
+    document.getElementById('su-pass2').classList.add('err'); 
+    return; 
+  }
+  if (!API_KEY) { 
+    showErr('su','Authentication service unavailable. Please try again.'); 
+    return; 
+  }
 
   setLoading('su', true);
   try {
@@ -452,10 +505,14 @@ async function signUp() {
     document.getElementById('su-ok-msg').textContent = 'Account created! Signing you in…';
     ok.classList.add('show');
 
+    const expiresAt = Date.now() + (data.expiresIn * 1000);
     localStorage.setItem('fv_token', data.idToken);
     localStorage.setItem('fv_refresh', data.refreshToken);
     localStorage.setItem('fv_email', data.email);
-    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+    localStorage.setItem('fv_expires_at', expiresAt.toString());
+    localStorage.setItem('fv_token_issued', Date.now().toString());
+    
+    setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
 
   } catch(e) {
     showErr('su', 'Network error. Check your connection and try again.');
@@ -464,7 +521,6 @@ async function signUp() {
   }
 }
 
-/* ── FRIENDLY ERROR MESSAGES ── */
 function friendlyError(code) {
   const map = {
     'EMAIL_NOT_FOUND':           'No account found with that email address.',
@@ -479,14 +535,12 @@ function friendlyError(code) {
   return map[code] || 'Something went wrong. Please try again.';
 }
 
-/* ── KEYBOARD SUBMIT ── */
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   if (document.getElementById('fs-signin').classList.contains('active')) signIn();
   else signUp();
 });
 
-/* ── INIT ── */
 checkSession();
 loadConfig();
 </script>
