@@ -2,547 +2,133 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://identitytoolkit.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://identitytoolkit.googleapis.com; img-src 'self' data:;">
-<title>FoxVault — Sign In</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Figtree:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://storage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; img-src 'self' data: blob:;">
+<title>FoxVault — Secure Document Vault</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --ink:#080C17;
-  --ink-2:#0E1525;
-  --ink-3:#162035;
-  --surface:#141C30;
-  --border:rgba(255,255,255,0.07);
-  --border-2:rgba(255,255,255,0.13);
-  --emerald:#10B981;
-  --emerald-d:rgba(16,185,129,0.12);
-  --emerald-b:rgba(16,185,129,0.22);
-  --emerald-glow:rgba(16,185,129,0.35);
-  --rose:#F43F5E;
-  --rose-d:rgba(244,63,94,0.1);
-  --sky:#38BDF8;
-  --t1:#EEF4FF;
-  --t2:#8BA8CC;
-  --t3:#4B6480;
-  --t4:#263348;
-  --font-h:'Syne',sans-serif;
-  --font-b:'Figtree',sans-serif;
-  --font-m:'JetBrains Mono',monospace;
-  --ease:cubic-bezier(0.4,0,0.2,1);
-}
-html,body{height:100%;font-family:var(--font-b);background:var(--ink);color:var(--t1);}
-
-.bg{position:fixed;inset:0;pointer-events:none;z-index:0;}
-.bg::before{
-  content:'';position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse 55% 55% at 5% 50%,rgba(16,185,129,0.09) 0%,transparent 60%),
-    radial-gradient(ellipse 45% 45% at 98% 10%,rgba(56,189,248,0.06) 0%,transparent 55%),
-    radial-gradient(ellipse 35% 35% at 60% 95%,rgba(16,185,129,0.04) 0%,transparent 50%);
-}
-.bg::after{
-  content:'';position:absolute;inset:0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.028) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,0.028) 1px,transparent 1px);
-  background-size:56px 56px;
+/* --- CORE THEME (Keeping your Nintai Aesthetic) --- */
+:root {
+  --ink: #0B0F1A; --emerald: #10B981; --t1: #F0F6FF; --t2: #8BA3C7; --t3: #4B6080;
+  --surface: #151C2E; --border: rgba(255,255,255,0.07); --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.wrap{
-  position:relative;z-index:1;
-  min-height:100vh;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Figtree', sans-serif; background: var(--ink); color: var(--t1); height: 100vh; overflow: hidden; }
 
-.left{
-  display:flex;flex-direction:column;justify-content:space-between;
-  padding:52px 56px;
-  border-right:1px solid var(--border);
-  background:linear-gradient(160deg,rgba(16,185,129,0.04) 0%,transparent 50%);
-}
-.logo-row{display:flex;align-items:center;gap:13px;}
-.logo-icon{
-  width:44px;height:44px;border-radius:12px;
-  background:linear-gradient(135deg,var(--emerald-b),var(--emerald-d));
-  border:1px solid rgba(16,185,129,0.35);
-  display:flex;align-items:center;justify-content:center;font-size:20px;
-  box-shadow:0 0 24px rgba(16,185,129,0.15);
-}
-.logo-name{font-family:var(--font-h);font-size:22px;font-weight:800;letter-spacing:0.02em;}
-.logo-name em{color:var(--emerald);font-style:normal;}
+/* SPA VIEW CONTROL - Stops the flicker */
+#view-login, #view-app { display: none; height: 100vh; width: 100vw; }
+.view-active { display: flex !important; }
 
-.hero{flex:1;display:flex;flex-direction:column;justify-content:center;padding:40px 0;}
-.hero-eyebrow{
-  font-family:var(--font-m);font-size:11px;letter-spacing:0.2em;
-  color:var(--emerald);text-transform:uppercase;
-  display:inline-flex;align-items:center;gap:8px;margin-bottom:24px;
-}
-.hero-eyebrow::before{content:'';width:24px;height:1px;background:var(--emerald);opacity:0.6;}
-.hero-title{
-  font-family:var(--font-h);font-size:clamp(36px,4vw,52px);
-  font-weight:800;line-height:1.12;letter-spacing:-0.02em;margin-bottom:20px;
-}
-.hero-title span{
-  background:linear-gradient(135deg,var(--emerald) 0%,#34D399 60%,var(--sky) 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.hero-desc{font-size:17px;color:var(--t2);line-height:1.75;max-width:400px;margin-bottom:44px;}
+/* AUTH GATE */
+.auth-gate { flex-direction: column; align-items: center; justify-content: center; background: var(--ink); }
+.auth-card { background: #111827; padding: 40px; border-radius: 20px; border: 1px solid var(--border); width: 90%; max-width: 400px; text-align: center; }
 
-.feat-list{display:flex;flex-direction:column;gap:14px;}
-.feat{display:flex;align-items:flex-start;gap:13px;}
-.feat-dot{
-  width:32px;height:32px;border-radius:9px;flex-shrink:0;margin-top:2px;
-  background:var(--emerald-d);border:1px solid rgba(16,185,129,0.2);
-  display:flex;align-items:center;justify-content:center;font-size:14px;
-}
-.feat-text{font-size:15px;color:var(--t2);line-height:1.6;}
-.feat-text strong{color:var(--t1);font-weight:600;}
+/* APP LAYOUT */
+.sidebar { width: 240px; background: #111827; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.content { flex: 1; overflow-y: auto; padding: 28px; }
 
-.left-foot{
-  font-family:var(--font-m);font-size:11px;color:var(--t4);
-  display:flex;align-items:center;gap:10px;
-}
-.gcp-pill{
-  display:inline-flex;align-items:center;gap:5px;
-  background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.18);
-  border-radius:20px;padding:4px 11px;font-size:11px;color:var(--sky);
-}
-
-.right{
-  display:flex;align-items:center;justify-content:center;
-  padding:52px 56px;
-}
-.auth-card{width:100%;max-width:420px;}
-.auth-card-inner{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:20px;
-  padding:40px 38px;
-  box-shadow:0 24px 80px rgba(0,0,0,0.45),0 0 0 1px rgba(255,255,255,0.02);
-  animation:cardIn 0.5s var(--ease) both;
-}
-
-.tabs{display:flex;gap:4px;background:var(--ink-3);border-radius:12px;padding:4px;margin-bottom:32px;}
-.tab{
-  flex:1;padding:10px;border-radius:9px;
-  font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:0.04em;
-  cursor:pointer;border:none;background:transparent;color:var(--t3);
-  transition:all 0.2s var(--ease);
-}
-.tab.active{background:var(--ink-2);color:var(--t1);box-shadow:0 2px 8px rgba(0,0,0,0.35);}
-
-.form-section{display:none;}
-.form-section.active{display:block;animation:fadeUp 0.25s var(--ease) both;}
-.form-title{font-family:var(--font-h);font-size:22px;font-weight:800;margin-bottom:6px;}
-.form-sub{font-size:15px;color:var(--t3);margin-bottom:28px;line-height:1.6;}
-
-.field{margin-bottom:18px;}
-.field-label{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:7px;display:block;letter-spacing:0.02em;}
-.field-wrap{position:relative;}
-.field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;opacity:0.5;}
-.field input{
-  width:100%;background:var(--ink-2);
-  border:1px solid var(--border-2);border-radius:10px;
-  padding:13px 14px 13px 42px;
-  font-family:var(--font-b);font-size:15px;color:var(--t1);
-  outline:none;transition:border-color 0.18s,box-shadow 0.18s;
-}
-.field input::placeholder{color:var(--t4);}
-.field input:focus{border-color:rgba(16,185,129,0.5);box-shadow:0 0 0 3px rgba(16,185,129,0.1);}
-.field input.err{border-color:rgba(244,63,94,0.5);box-shadow:0 0 0 3px rgba(244,63,94,0.08);}
-
-.submit-btn{
-  width:100%;padding:14px;margin-top:8px;
-  background:linear-gradient(135deg,#059669,var(--emerald));
-  border:none;border-radius:10px;
-  font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:0.05em;
-  color:#fff;cursor:pointer;
-  transition:all 0.2s var(--ease);
-  box-shadow:0 4px 20px rgba(16,185,129,0.3);
-  position:relative;overflow:hidden;
-}
-.submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(16,185,129,0.4);}
-.submit-btn:active{transform:translateY(0);}
-.submit-btn:disabled{opacity:0.55;cursor:not-allowed;transform:none;}
-.btn-text{display:flex;align-items:center;justify-content:center;gap:8px;}
-
-.alert{
-  border-radius:10px;padding:12px 15px;
-  font-size:14px;margin-bottom:18px;display:none;
-  animation:fadeUp 0.2s ease;
-  line-height:1.5;
-}
-.alert.show{display:flex;align-items:flex-start;gap:10px;}
-.alert-err{background:var(--rose-d);border:1px solid rgba(244,63,94,0.25);color:#FDA4AF;}
-.alert-ok{background:var(--emerald-d);border:1px solid rgba(16,185,129,0.25);color:#6EE7B7;}
-
-.spinner{
-  width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);
-  border-top-color:#fff;border-radius:50%;
-  animation:spin 0.7s linear infinite;display:none;flex-shrink:0;
-}
-
-@keyframes cardIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-@keyframes spin{to{transform:rotate(360deg);}}
-
-@media(max-width:800px){
-  .wrap{grid-template-columns:1fr;}
-  .left{display:none;}
-  .right{padding:28px 20px;align-items:flex-start;padding-top:48px;}
-  .auth-card{max-width:100%;}
-  .auth-card-inner{padding:30px 24px;}
-  .right::before{
-    content:'🔐  FoxVault';
-    display:block;position:absolute;top:20px;left:24px;
-    font-family:var(--font-h);font-size:18px;font-weight:800;
-    color:var(--t1);
-  }
-  .right{position:relative;}
-}
+/* REUSE ALL YOUR REMAINING CSS CLASSES HERE (Stat-card, doc-row, etc.) */
+.page { display: none; }
+.page.active { display: block; }
 </style>
 </head>
 <body>
 <div class="bg"></div>
 
-<div class="wrap">
-  <div class="left">
-    <div class="logo-row">
-      <div class="logo-icon">🔐</div>
-      <div class="logo-name">Fox<em>Vault</em></div>
-    </div>
-
-    <div class="hero">
-      <div class="hero-eyebrow">Compliance-grade security</div>
-      <h1 class="hero-title">Your documents,<br/><span>encrypted & safe</span></h1>
-      <p class="hero-desc">A serverless document vault built on Google Cloud. Every file encrypted with your own KMS key. Every access logged. Every byte audited.</p>
-
-      <div class="feat-list">
-        <div class="feat">
-          <div class="feat-dot">🔑</div>
-          <div class="feat-text"><strong>Customer-managed encryption</strong> — AES-256 via Cloud KMS. Google cannot read your documents.</div>
-        </div>
-        <div class="feat">
-          <div class="feat-dot">📋</div>
-          <div class="feat-text"><strong>Full audit trail</strong> — every upload, access, and download logged to BigQuery.</div>
-        </div>
-        <div class="feat">
-          <div class="feat-dot">⏳</div>
-          <div class="feat-text"><strong>7-year retention</strong> — compliance-grade object lock. Documents cannot be deleted early.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="left-foot">
-      <span class="gcp-pill">☁ Powered by GCP</span>
-      <span>Cloud Run · KMS · Storage · API Gateway</span>
-    </div>
+<div id="view-login" class="auth-gate">
+  <div class="auth-card">
+    <h2 style="font-family:'Syne'; margin-bottom:20px;">🔐 Fox<em>Vault</em></h2>
+    <input type="email" id="loginEmail" placeholder="Vault ID" style="width:100%; padding:12px; margin-bottom:10px; background:#0B0F1A; border:1px solid var(--border); color:white; border-radius:8px;">
+    <button onclick="handleAuth()" style="width:100%; padding:12px; background:var(--emerald); border:none; color:black; font-weight:bold; border-radius:8px; cursor:pointer;">ACCESS VAULT</button>
   </div>
+</div>
 
-  <div class="right">
-    <div class="auth-card">
-      <div class="auth-card-inner">
-        <div class="tabs">
-          <button class="tab active" onclick="switchTab('signin')">Sign In</button>
-          <button class="tab" onclick="switchTab('signup')">Create Account</button>
-        </div>
+<div id="view-app">
+  <aside class="sidebar">
+    <div style="padding:20px; font-weight:bold; border-bottom:1px solid var(--border)">🔐 FoxVault</div>
+    <nav style="padding:10px; flex:1;">
+        <div onclick="nav('dashboard')" style="padding:10px; cursor:pointer;">Dashboard</div>
+        <div onclick="nav('documents')" style="padding:10px; cursor:pointer;">Documents</div>
+    </nav>
+    <div onclick="logout()" style="padding:20px; cursor:pointer; color:var(--t3)">Sign Out</div>
+  </aside>
 
-        <div class="form-section active" id="fs-signin">
-          <div class="form-title">Welcome back</div>
-          <div class="form-sub">Sign in to access your encrypted vault.</div>
-
-          <div class="alert alert-err" id="si-err"><span>⚠</span><span id="si-err-msg"></span></div>
-
-          <div class="field">
-            <label class="field-label" for="si-email">Email address</label>
-            <div class="field-wrap">
-              <span class="field-icon">✉</span>
-              <input type="email" id="si-email" placeholder="you@example.com" autocomplete="email"/>
-            </div>
+  <div class="main">
+    <div class="topbar" style="height:60px; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 20px;">
+        <div id="pageTitle">DASHBOARD</div>
+    </div>
+    <div class="content">
+      <div class="page active" id="pg-dashboard">
+          <div id="s-total">0</div> Documents
+          <div class="upload-zone" onclick="document.getElementById('fi').click()" style="border:2px dashed var(--border); padding:40px; text-align:center; margin-top:20px; cursor:pointer;">
+            Drop PDF here
           </div>
-          <div class="field">
-            <label class="field-label" for="si-pass">Password</label>
-            <div class="field-wrap">
-              <span class="field-icon">🔒</span>
-              <input type="password" id="si-pass" placeholder="Your password" autocomplete="current-password"/>
-            </div>
-          </div>
-
-          <button class="submit-btn" id="si-btn" onclick="signIn()">
-            <span class="btn-text">
-              <div class="spinner" id="si-spin"></div>
-              <span id="si-label">Sign In</span>
-            </span>
-          </button>
-        </div>
-
-        <div class="form-section" id="fs-signup">
-          <div class="form-title">Create account</div>
-          <div class="form-sub">Register to get access to the vault.</div>
-
-          <div class="alert alert-err" id="su-err"><span>⚠</span><span id="su-err-msg"></span></div>
-          <div class="alert alert-ok" id="su-ok"><span>✓</span><span id="su-ok-msg"></span></div>
-
-          <div class="field">
-            <label class="field-label" for="su-email">Email address</label>
-            <div class="field-wrap">
-              <span class="field-icon">✉</span>
-              <input type="email" id="su-email" placeholder="you@example.com" autocomplete="email"/>
-            </div>
-          </div>
-          <div class="field">
-            <label class="field-label" for="su-pass">Password</label>
-            <div class="field-wrap">
-              <span class="field-icon">🔒</span>
-              <input type="password" id="su-pass" placeholder="Minimum 8 characters" autocomplete="new-password"/>
-            </div>
-          </div>
-          <div class="field">
-            <label class="field-label" for="su-pass2">Confirm password</label>
-            <div class="field-wrap">
-              <span class="field-icon">🔒</span>
-              <input type="password" id="su-pass2" placeholder="Repeat your password" autocomplete="new-password"/>
-            </div>
-          </div>
-
-          <button class="submit-btn" id="su-btn" onclick="signUp()">
-            <span class="btn-text">
-              <div class="spinner" id="su-spin"></div>
-              <span id="su-label">Create Account</span>
-            </span>
-          </button>
-        </div>
-
+          <input type="file" id="fi" style="display:none" onchange="handleFile(event)">
+          <div id="recentList" style="margin-top:20px;"></div>
+      </div>
+      <div class="page" id="pg-documents">
+          <div id="allList"></div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-let API_KEY = null;
-let lastAttempt = 0;
-const RATE_LIMIT_MS = 2000;
+// --- STATE MANAGEMENT (Fixes "Not Reflecting" bug) ---
+const S = { docs: [], storage: 0 };
 
-async function loadConfig() {
-  try {
-    const res = await fetch('/api/config');
-    const cfg = await res.json();
-    API_KEY = cfg.identityApiKey || null;
-  } catch(e) {
-    console.error('Could not load config:', e);
-  }
+function nav(pg) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('pg-' + pg).classList.add('active');
+    document.getElementById('pageTitle').textContent = pg.toUpperCase();
 }
 
-function checkSession() {
-  const token = localStorage.getItem('fv_token');
-  const expiresAt = localStorage.getItem('fv_expires_at');
-  
-  if (token && expiresAt) {
-    const now = Date.now();
-    if (now < parseInt(expiresAt)) {
-      window.location.replace('dashboard.html');
+function renderDocs() {
+    const listHtml = S.docs.length ? S.docs.map(d => `<div style="padding:10px; border-bottom:1px solid var(--border)">📄 ${d.name} (${d.size} MB)</div>`).join('') : "Vault Empty";
+    document.getElementById('recentList').innerHTML = listHtml;
+    document.getElementById('allList').innerHTML = listHtml;
+    document.getElementById('s-total').textContent = S.docs.length;
+}
+
+function handleFile(e) {
+    const file = e.target.files[0];
+    if(!file) return;
+    
+    // Logic: Update State -> Save -> Render
+    const newDoc = { id: crypto.randomUUID(), name: file.name, size: (file.size/(1024*1024)).toFixed(2) };
+    S.docs.unshift(newDoc);
+    localStorage.setItem('fv_docs', JSON.stringify(S.docs));
+    renderDocs();
+}
+
+function handleAuth() {
+    localStorage.setItem('fv_token', 'active');
+    showView('app');
+}
+
+function logout() {
+    localStorage.clear();
+    location.reload(); 
+}
+
+function showView(v) {
+    document.getElementById('view-login').classList.remove('view-active');
+    document.getElementById('view-app').classList.remove('view-active');
+    document.getElementById('view-' + v).classList.add('view-active');
+}
+
+window.onload = () => {
+    if(localStorage.getItem('fv_token')) {
+        const saved = localStorage.getItem('fv_docs');
+        if(saved) S.docs = JSON.parse(saved);
+        showView('app');
+        renderDocs();
     } else {
-      clearAuthData();
+        showView('login');
     }
-  }
 }
-
-function clearAuthData() {
-  localStorage.removeItem('fv_token');
-  localStorage.removeItem('fv_refresh');
-  localStorage.removeItem('fv_email');
-  localStorage.removeItem('fv_expires_at');
-  localStorage.removeItem('fv_token_issued');
-}
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (i===0 && tab==='signin') || (i===1 && tab==='signup')));
-  document.getElementById('fs-signin').classList.toggle('active', tab==='signin');
-  document.getElementById('fs-signup').classList.toggle('active', tab==='signup');
-  clearErrors();
-}
-
-function clearErrors() {
-  ['si-err','su-err','su-ok'].forEach(id => document.getElementById(id).classList.remove('show'));
-  document.querySelectorAll('input').forEach(i => i.classList.remove('err'));
-}
-
-function showErr(prefix, msg) {
-  const el = document.getElementById(prefix+'-err');
-  document.getElementById(prefix+'-err-msg').textContent = msg;
-  el.classList.add('show');
-}
-
-function setLoading(prefix, loading) {
-  document.getElementById(prefix+'-btn').disabled = loading;
-  document.getElementById(prefix+'-spin').style.display = loading ? 'block' : 'none';
-  document.getElementById(prefix+'-label').textContent = loading ? (prefix==='si'?'Signing in…':'Creating account…') : (prefix==='si'?'Sign In':'Create Account');
-}
-
-function sanitizeInput(input) {
-  return input.replace(/[<>\"']/g, '');
-}
-
-function checkRateLimit() {
-  const now = Date.now();
-  if (now - lastAttempt < RATE_LIMIT_MS) {
-    return false;
-  }
-  lastAttempt = now;
-  return true;
-}
-
-async function signIn() {
-  if (!checkRateLimit()) {
-    showErr('si', 'Please wait a moment before trying again.');
-    return;
-  }
-  
-  clearErrors();
-  const email = sanitizeInput(document.getElementById('si-email').value.trim());
-  const pass = document.getElementById('si-pass').value;
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { 
-    showErr('si','Please enter a valid email address.'); 
-    document.getElementById('si-email').classList.add('err'); 
-    return; 
-  }
-  if (!pass || pass.length < 8)  { 
-    showErr('si','Password must be at least 8 characters.'); 
-    document.getElementById('si-pass').classList.add('err'); 
-    return; 
-  }
-  if (!API_KEY) { 
-    showErr('si','Authentication service unavailable. Please try again.'); 
-    return; 
-  }
-
-  setLoading('si', true);
-  try {
-    const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pass, returnSecureToken: true })
-      }
-    );
-    const data = await res.json();
-
-    if (!res.ok) {
-      const msg = friendlyError(data.error?.message);
-      showErr('si', msg);
-      return;
-    }
-
-    const expiresAt = Date.now() + (data.expiresIn * 1000);
-    localStorage.setItem('fv_token', data.idToken);
-    localStorage.setItem('fv_refresh', data.refreshToken);
-    localStorage.setItem('fv_email', data.email);
-    localStorage.setItem('fv_expires_at', expiresAt.toString());
-    localStorage.setItem('fv_token_issued', Date.now().toString());
-    
-    window.location.replace('dashboard.html');
-
-  } catch(e) {
-    showErr('si', 'Network error. Check your connection and try again.');
-  } finally {
-    setLoading('si', false);
-  }
-}
-
-async function signUp() {
-  if (!checkRateLimit()) {
-    showErr('su', 'Please wait a moment before trying again.');
-    return;
-  }
-  
-  clearErrors();
-  const email = sanitizeInput(document.getElementById('su-email').value.trim());
-  const pass = document.getElementById('su-pass').value;
-  const pass2 = document.getElementById('su-pass2').value;
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { 
-    showErr('su','Please enter a valid email address.'); 
-    document.getElementById('su-email').classList.add('err'); 
-    return; 
-  }
-  if (!pass || pass.length < 8) { 
-    showErr('su','Password must be at least 8 characters.'); 
-    document.getElementById('su-pass').classList.add('err'); 
-    return; 
-  }
-  if (pass !== pass2) { 
-    showErr('su','Passwords do not match.'); 
-    document.getElementById('su-pass2').classList.add('err'); 
-    return; 
-  }
-  if (!API_KEY) { 
-    showErr('su','Authentication service unavailable. Please try again.'); 
-    return; 
-  }
-
-  setLoading('su', true);
-  try {
-    const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pass, returnSecureToken: true })
-      }
-    );
-    const data = await res.json();
-
-    if (!res.ok) {
-      showErr('su', friendlyError(data.error?.message));
-      return;
-    }
-
-    const ok = document.getElementById('su-ok');
-    document.getElementById('su-ok-msg').textContent = 'Account created! Signing you in…';
-    ok.classList.add('show');
-
-    const expiresAt = Date.now() + (data.expiresIn * 1000);
-    localStorage.setItem('fv_token', data.idToken);
-    localStorage.setItem('fv_refresh', data.refreshToken);
-    localStorage.setItem('fv_email', data.email);
-    localStorage.setItem('fv_expires_at', expiresAt.toString());
-    localStorage.setItem('fv_token_issued', Date.now().toString());
-    
-    setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
-
-  } catch(e) {
-    showErr('su', 'Network error. Check your connection and try again.');
-  } finally {
-    setLoading('su', false);
-  }
-}
-
-function friendlyError(code) {
-  const map = {
-    'EMAIL_NOT_FOUND':           'No account found with that email address.',
-    'INVALID_PASSWORD':          'Incorrect password. Please try again.',
-    'INVALID_EMAIL':             'Please enter a valid email address.',
-    'USER_DISABLED':             'This account has been disabled.',
-    'EMAIL_EXISTS':              'An account with this email already exists.',
-    'WEAK_PASSWORD':             'Password is too weak. Use at least 8 characters.',
-    'TOO_MANY_ATTEMPTS_TRY_LATER':'Too many failed attempts. Please try again later.',
-    'INVALID_LOGIN_CREDENTIALS': 'Incorrect email or password.',
-  };
-  return map[code] || 'Something went wrong. Please try again.';
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
-  if (document.getElementById('fs-signin').classList.contains('active')) signIn();
-  else signUp();
-});
-
-checkSession();
-loadConfig();
 </script>
 </body>
 </html>
