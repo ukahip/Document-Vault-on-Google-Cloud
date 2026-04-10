@@ -582,7 +582,7 @@ body {
     <div class="user-card">
       <div class="user-av">👤</div>
       <div>
-        <div class="user-email" id="userEmail">user@example.com</div>
+        <div class="user-email" id="userEmail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="83f6f0e6f1c3e6fbe2eef3efe6ade0ecee">[email&#160;protected]</a></div>
         <div class="user-role">Authenticated User</div>
       </div>
     </div>
@@ -827,7 +827,7 @@ body {
 
 <div class="toasts" id="toastArea"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 /* ── STATE ── */
 const S = { docs: [], events: 1, storage: 0 };
 let pendingDel = null, pendingShare = null;
@@ -1009,88 +1009,5 @@ function checkSession() {
 (function() {
   checkSession();
   renderDocs();
-        addAudit('up', 'UPLOAD COMPLETE — <strong>' + file.name + '</strong> · encrypted · CMEK');
-        toast('✅', 'Document Encrypted', file.name + ' is now in the vault');
-      }, 400);
-    } else {
-      fill.style.width = p + '%';
-      pct.textContent = Math.floor(p) + '%';
-    }
-  }, 90);
-}
-
-/* ── AUDIT ── */
-function addAudit(type, msg) {
-  S.events++;
-  const stream = document.getElementById('auditStream');
-  const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const cls = { up:'up', dn:'dn', dl:'dl', au:'au', sy:'sy' }[type] || 'sy';
-  const entry = document.createElement('div');
-  entry.className = 'audit-entry';
-  entry.innerHTML = `<div class="a-dot ${cls}"></div><div><div class="a-event">${msg}</div><div class="a-meta">${time} UTC · Cloud Audit Logs → BigQuery</div></div>`;
-  stream.insertBefore(entry, stream.firstChild);
-  while (stream.children.length > 20) stream.removeChild(stream.lastChild);
-  refreshStats();
-}
-function clearAudit() {
-  document.getElementById('auditStream').innerHTML = '<div class="audit-entry"><div class="a-dot sy"></div><div><div class="a-event"><strong>LOG CLEARED</strong> — display reset</div><div class="a-meta">Events persist in Cloud Audit Logs and BigQuery</div></div></div>';
-}
-
-/* ── MODALS ── */
-function openDel(id, name, idx) { pendingDel = { id, name, idx }; document.getElementById('delId').value = id; document.getElementById('delModal').classList.add('open'); }
-function openShare(id, name) { pendingShare = { id, name }; document.getElementById('shareId').value = id; document.getElementById('shareModal').classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); pendingDel = null; pendingShare = null; }
-function confirmDel() {
-  if (!pendingDel) return;
-  const { name, idx } = pendingDel;
-  S.storage = parseFloat((S.storage - S.docs[idx].size).toFixed(2));
-  S.docs.splice(idx, 1);
-  closeModal('delModal');
-  renderDocs();
-  addAudit('dl', 'DELETE — <strong>' + name + '</strong> removed from vault');
-  toast('⚠️', 'Document Deleted', name + ' removed from vault');
-}
-function confirmShare() {
-  if (!pendingShare) return;
-  closeModal('shareModal');
-  addAudit('dn', 'SIGNED URL — <strong>' + pendingShare.name + '</strong> · 5 min expiry · SA signed');
-  toast('✅', 'URL Generated', 'Signed URL ready · expires in 5 minutes');
-}
-document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
-
-/* ── TOAST ── */
-function toast(icon, title, sub) {
-  const area = document.getElementById('toastArea');
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.innerHTML = `<div class="t-icon">${icon}</div><div><div class="t-title">${title}</div><div class="t-sub">${sub}</div></div>`;
-  area.appendChild(el);
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 220); }, 3500);
-}
-
-/* ── AUTH ── */
-function logout() {
-  localStorage.removeItem('fv_token');
-  localStorage.removeItem('fv_refresh');
-  localStorage.removeItem('fv_email');
-  window.location.href = 'index.html';
-}
-
-/* ── SESSION ── */
-function checkSession() {
-  const token = localStorage.getItem('fv_token');
-  if (!token) { window.location.href = 'index.html'; return; }
-  const email = localStorage.getItem('fv_email') || '';
-  const emailEl = document.getElementById('userEmail');
-  if (emailEl && email) emailEl.textContent = email;
-}
-
-/* ── INIT ── */
-(function() {
-  checkSession();
-  renderDocs();
-
+  addAudit('sy', 'SYSTEM INIT — FoxVault GCP started');
 })();
-</script>
-</body>
-</html>
