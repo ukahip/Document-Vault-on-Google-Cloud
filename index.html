@@ -436,13 +436,14 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 
 /* ─────────────────────────────────────────────────────────────
    CONFIG  — loaded from /api/config (Vercel serverless fn)
-   The Identity Platform API key never appears in this file.
 ───────────────────────────────────────────────────────────── */
 let CFG = { gatewayUrl:'', identityApiKey:'' };
 async function loadConfig(){
   try{
     const r = await fetch('/api/config');
     if(r.ok) CFG = await r.json();
+    // Clean up gateway URL (remove trailing slash if present)
+    if(CFG.gatewayUrl) CFG.gatewayUrl = CFG.gatewayUrl.replace(/\/$/, '');
   }catch(e){ console.error('[FoxVault] config error',e.message); }
 }
 
@@ -486,25 +487,29 @@ function esc(s){
 }
 
 /* ─────────────────────────────────────────────────────────────
-   API HELPER  — all calls go through the GCP API Gateway.
-   NOTE: If your Cloud Run function paths differ from the ones
-   below, update the paths here to match your gateway config:
-     POST   /upload           — upload a PDF
-     GET    /documents        — list all documents
-     DELETE /documents/{id}   — delete a document
-     GET    /documents/{id}/url — get a 5-min signed download URL
+   API HELPER  — all calls go through the GCP API Gateway
+   MATCHES YOUR OpenAPI Spec:
+     POST   /documents           — upload PDF (raw binary)
+     GET    /documents            — list documents
+     GET    /documents/{doc_id}   — get download URL
+   NOTE: Delete is not implemented in your OpenAPI spec
 ───────────────────────────────────────────────────────────── */
-async function apiReq(method, path, body){
+async function apiReq(method, path, body, contentType){
   const opts = {
     method,
     headers: { 'Authorization': 'Bearer ' + Session.token() }
   };
-  if(body instanceof FormData){
-    opts.body = body; // browser sets Content-Type + boundary automatically
+  
+  // Handle different body types
+  if(body instanceof ArrayBuffer){
+    // For PDF upload - send raw binary
+    opts.body = body;
+    opts.headers['Content-Type'] = contentType || 'application/pdf';
   } else if(body){
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
+  
   const res = await fetch(CFG.gatewayUrl + path, opts);
   if(!res.ok){
     let msg = res.statusText;
@@ -618,7 +623,7 @@ async function showDash(email){
   document.getElementById('screen-dash').classList.add('visible');
   document.getElementById('userEmail').textContent=email||Session.email();
   addAudit('au','LOGIN — authenticated via Identity Platform');
-  await loadDocs(); // ← fetch real documents from GCP on every login
+  await loadDocs(); // Fetch real documents from GCP
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -696,10 +701,6 @@ function renderDocs(){
 
 /* ─────────────────────────────────────────────────────────────
    LOAD DOCS FROM GCP — called on login and after upload
-   Expects the backend to return one of:
-     { documents: [{ id, name, size }] }   ← preferred
-     [{ id, name, size }]                  ← array also accepted
-   size can be in bytes (auto-converted) or already in MB.
 ───────────────────────────────────────────────────────────── */
 async function loadDocs(){
   try{
@@ -709,7 +710,7 @@ async function loadDocs(){
       // Accept size as bytes or MB — convert if >1000 (likely bytes)
       const raw = parseFloat(d.size) || 0;
       const mb  = raw > 1000 ? parseFloat((raw/1048576).toFixed(2)) : parseFloat(raw.toFixed(2));
-      return { id: String(d.id||d.name||d.object_name), name: d.name||d.fileName||d.file_name||'document.pdf', size: mb };
+      return { id: String(d.id||d.doc_id||d.name||'unknown'), name: d.name||d.fileName||d.file_name||'document.pdf', size: mb };
     });
     S.storage = parseFloat(S.docs.reduce((acc,d)=>acc+d.size,0).toFixed(2));
     renderDocs();
@@ -722,11 +723,9 @@ async function loadDocs(){
 
 /* ─────────────────────────────────────────────────────────────
    UPLOAD — real POST to GCP via API Gateway
-   Progress bar animates to 80% while the request is in-flight,
-   then jumps to 100% on success.
+   CHANGED: Uses POST /documents (not /upload) per your OpenAPI spec
+   Sends raw ArrayBuffer (not FormData) per your Python function
 ───────────────────────────────────────────────────────────── */
-function uid(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{ const r=Math.random()*16|0; return(c==='x'?r:(r&3|8)).toString(16); }); }
-
 function setupDZ(dzId,fiId){
   const dz=document.getElementById(dzId), fi=document.getElementById(fiId);
   dz.addEventListener('click',()=>fi.click());
@@ -763,20 +762,17 @@ async function go(file){
   },200);
 
   try{
-    const fd = new FormData();
-    fd.append('file', file);          // key must match what your Cloud Run function expects
-    // fd.append('filename', file.name); // uncomment if your function needs this separately
-
-    const data = await apiReq('POST', '/upload', fd);
+    // Read file as ArrayBuffer and send raw binary (matches your Python function)
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // CHANGED: Use POST /documents (not /upload) per your OpenAPI spec
+    const data = await apiReq('POST', '/documents', arrayBuffer, 'application/pdf');
 
     // Build the local doc record from what the backend returns
     const doc = {
-      id:   String(data.id   || data.object_name || data.name || uid()),
-      name: String(data.name || data.fileName     || file.name),
-      size: (() => {
-        const raw = parseFloat(data.size) || file.size;
-        return raw > 1000 ? parseFloat((raw/1048576).toFixed(2)) : parseFloat(raw.toFixed(2));
-      })()
+      id:   String(data.doc_id || data.id || data.object_name || data.name || 'unknown'),
+      name: file.name, // Use original filename since backend doesn't return it
+      size: sizeMB
     };
 
     stopped=true; clearInterval(ticker);
@@ -802,13 +798,16 @@ async function go(file){
 
 /* ─────────────────────────────────────────────────────────────
    DOWNLOAD — gets a signed URL from GCP and opens it
+   CHANGED: Uses GET /documents/{doc_id} (not /documents/{id}/url)
 ───────────────────────────────────────────────────────────── */
 async function downloadDoc(id, name){
   addAudit('dn','DOWNLOAD REQUEST — '+esc(name));
   try{
-    const data = await apiReq('GET', '/documents/'+encodeURIComponent(id)+'/url');
-    const url = data.url || data.signedUrl || data.signed_url || data.download_url;
-    if(!url) throw new Error('No URL in response');
+    // CHANGED: Use GET /documents/{doc_id} per your OpenAPI spec
+    const data = await apiReq('GET', '/documents/'+encodeURIComponent(id));
+    // Backend returns { download_url: "..." } or { url: "..." }
+    const url = data.download_url || data.url || data.signedUrl || data.signed_url;
+    if(!url) throw new Error('No download URL in response');
     window.open(url, '_blank', 'noopener');
     addAudit('dn','SIGNED URL — '+esc(name)+' · 5 min expiry · opened');
     toast('✅','Download Started', name);
@@ -846,12 +845,20 @@ function closeModal(id){ document.getElementById(id).classList.remove('open'); p
 document.getElementById('delCancel').addEventListener('click',()=>closeModal('delModal'));
 document.getElementById('shareCancel').addEventListener('click',()=>closeModal('shareModal'));
 
-/* DELETE — calls the real GCP API, then removes from local state */
+/* DELETE — NOT IMPLEMENTED IN YOUR OPENAPI SPEC
+   This will show an error until you add DELETE /documents/{doc_id} to your spec */
 document.getElementById('delConfirm').addEventListener('click', async ()=>{
   if(!pendingDel) return;
   const {id, name, idx} = pendingDel;
   closeModal('delModal');
   addAudit('dl','DELETE REQUEST — '+esc(name));
+  
+  // NOTE: Delete is not in your OpenAPI spec - this will fail
+  // You need to add: DELETE /documents/{doc_id} to api-spec.yaml
+  toast('⚠️','Delete Not Available', 'Delete endpoint not configured in API Gateway');
+  addAudit('dl','DELETE NOT CONFIGURED — add DELETE /documents/{doc_id} to OpenAPI spec');
+  
+  /* When you add the endpoint, uncomment this:
   try{
     await apiReq('DELETE', '/documents/'+encodeURIComponent(id));
     S.storage = parseFloat((S.storage - (S.docs[idx]?.size||0)).toFixed(2));
@@ -863,20 +870,22 @@ document.getElementById('delConfirm').addEventListener('click', async ()=>{
     addAudit('dl','DELETE FAILED — '+esc(name)+' · '+e.message);
     toast('❌','Delete Failed', e.message);
   }
+  */
 });
 
-/* SHARE — gets a signed URL from GCP and copies it to clipboard */
+/* SHARE — gets a signed URL from GCP and copies it to clipboard
+   Uses same endpoint as download: GET /documents/{doc_id} */
 document.getElementById('shareConfirm').addEventListener('click', async ()=>{
   if(!pendingShare) return;
   const {id, name} = pendingShare;
   closeModal('shareModal');
   addAudit('dn','SIGNED URL REQUEST — '+esc(name));
   try{
-    const data = await apiReq('GET', '/documents/'+encodeURIComponent(id)+'/url');
-    const url = data.url || data.signedUrl || data.signed_url || data.download_url;
+    // Uses same endpoint as download
+    const data = await apiReq('GET', '/documents/'+encodeURIComponent(id));
+    const url = data.download_url || data.url || data.signedUrl || data.signed_url;
     if(!url) throw new Error('No URL returned from gateway');
     await navigator.clipboard.writeText(url).catch(()=>{
-      // Clipboard may be blocked in non-HTTPS — show URL in toast instead
       toast('🔗','URL Generated (copy manually)', url);
       return;
     });
