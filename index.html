@@ -502,7 +502,7 @@ async function apiReq(method, path, body){
   if(body instanceof File || body instanceof Blob){
     // ── Send raw PDF bytes — matches request.get_data() in Cloud Run ──
     opts.headers['Content-Type'] = 'application/pdf';
-    if(body.name) opts.headers['Content-Disposition'] = `attachment; filename="${body.name}"`;
+    // Filename passed as ?filename= query param — avoids ISO-8859-1 header restriction
     opts.body = body;
   } else if(body instanceof FormData){
     opts.body = body; // browser sets Content-Type + boundary
@@ -769,7 +769,9 @@ async function go(file){
 
   try{
     // Send the raw File object — Cloud Run reads request.get_data()
-    const data = await apiReq('POST', '/documents', file);  // ← path matches spec; raw File matches request.get_data()
+    // Encode filename safely as a query param — avoids Content-Disposition header issues
+    const safeName = encodeURIComponent(file.name);
+    const data = await apiReq('POST', '/documents?filename=' + safeName, file);
 
     // Build the local doc record from what the backend returns
     const doc = {
