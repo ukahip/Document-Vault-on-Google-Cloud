@@ -427,7 +427,7 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 
 <!-- MODALS -->
 <div class="modal-bg" id="delModal" role="dialog" aria-modal="true"><div class="modal"><div class="modal-title">🗑 Delete Document</div><div class="modal-body">This action is permanent. If a retention policy is active, deletion will be blocked until it expires.</div><div class="m-field"><div class="m-label">Document ID</div><input class="m-input" id="delId" readonly/></div><div class="modal-acts"><button class="mbtn mbtn-ghost" id="delCancel">CANCEL</button><button class="mbtn mbtn-danger" id="delConfirm">DELETE</button></div></div></div>
-<div class="modal-bg" id="shareModal" role="dialog" aria-modal="true"><div class="modal"><div class="modal-title">🔗 Generate Signed URL</div><div class="modal-body">Creates a time-limited download link via GCP Service Account. Expires in <strong style="color:var(--emerald)">5 minutes</strong>.</div><div class="m-field"><div class="m-label">Document ID</div><input class="m-input" id="shareId" readonly/></div><div class="m-field"><div class="m-label">Expires In</div><input class="m-input" value="300 seconds (5 minutes)" readonly style="color:var(--t3)"/></div><div class="modal-acts"><button class="mbtn mbtn-ghost" id="shareCancel">CANCEL</button><button class="mbtn mbtn-primary" id="shareConfirm">GENERATE URL</button></div></div></div>
+<div class="modal-bg" id="shareModal" role="dialog" aria-modal="true"><div class="modal"><div class="modal-title">🔗 Generate Signed URL</div><div class="modal-body">Creates a time-limited download link via GCP Service Account. Expires in <strong style="color:var(--emerald)">5 minutes</strong>.</div><div class="m-field"><div class="m-label">Document ID</div><input class="m-input" id="shareId" readonly/></div><div class="m-field"><div class="m-label">Expires In</div><input class="m-input" value="300 seconds (5 minutes)" readonly style="color:var(--t3)"/></div><div class="modal-acts"><button class="mbtn mbtn-ghost" id="shareCancel">CANCEL</button><button class="mbtn mbtn-primary" id="shareConfirm">GENERATE &amp; COPY URL</button></div></div></div>
 
 <div class="toasts" id="toastArea" aria-live="polite"></div>
 
@@ -448,10 +448,6 @@ async function loadConfig(){
 
 /* ─────────────────────────────────────────────────────────────
    SESSION  — sessionStorage only (NOT localStorage)
-   Security rationale:
-   • Cleared automatically when the browser tab closes
-   • Not shared across tabs — each session is isolated
-   • Reduces XSS exposure window vs localStorage
 ───────────────────────────────────────────────────────────── */
 const Session = {
   set(t,e){ sessionStorage.setItem('fv_t',t); sessionStorage.setItem('fv_e',e); },
@@ -462,10 +458,6 @@ const Session = {
 
 /* ─────────────────────────────────────────────────────────────
    RATE LIMITER  — 5 attempts per 15 minutes (client-side)
-   Security rationale:
-   • Prevents automated credential stuffing via the UI
-   • Gives immediate feedback before hitting Identity Platform
-   • Identity Platform also rate-limits server-side as a second layer
 ───────────────────────────────────────────────────────────── */
 const RL = {
   MAX:5, WIN:15*60*1000, KEY:'fv_rl',
@@ -487,22 +479,51 @@ const RL = {
 };
 
 /* ─────────────────────────────────────────────────────────────
-   XSS SANITISER  — escape before any innerHTML injection
-   Security rationale:
-   • File names are user-controlled input
-   • Must be escaped before inserting into DOM
-   • Prevents script injection via crafted file names
+   XSS SANITISER
 ───────────────────────────────────────────────────────────── */
 function esc(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-/* ── AUTH ERROR MESSAGES ── */
+/* ─────────────────────────────────────────────────────────────
+   API HELPER  — all calls go through the GCP API Gateway.
+   NOTE: If your Cloud Run function paths differ from the ones
+   below, update the paths here to match your gateway config:
+     POST   /upload           — upload a PDF
+     GET    /documents        — list all documents
+     DELETE /documents/{id}   — delete a document
+     GET    /documents/{id}/url — get a 5-min signed download URL
+───────────────────────────────────────────────────────────── */
+async function apiReq(method, path, body){
+  const opts = {
+    method,
+    headers: { 'Authorization': 'Bearer ' + Session.token() }
+  };
+  if(body instanceof FormData){
+    opts.body = body; // browser sets Content-Type + boundary automatically
+  } else if(body){
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(CFG.gatewayUrl + path, opts);
+  if(!res.ok){
+    let msg = res.statusText;
+    try{ const d=await res.json(); msg = d.error||d.message||msg; }catch(_){}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+/* ─────────────────────────────────────────────────────────────
+   AUTH ERROR MESSAGES
+───────────────────────────────────────────────────────────── */
 function authErr(code){
   return({'EMAIL_NOT_FOUND':'No account found with that email.','INVALID_PASSWORD':'Incorrect password.','INVALID_EMAIL':'Enter a valid email address.','USER_DISABLED':'This account has been disabled.','EMAIL_EXISTS':'An account with this email already exists.','WEAK_PASSWORD':'Use at least 8 characters.','TOO_MANY_ATTEMPTS_TRY_LATER':'Too many attempts. Try again later.','INVALID_LOGIN_CREDENTIALS':'Incorrect email or password.'})[code]||'Something went wrong. Please try again.';
 }
 
-/* ── LOGIN UI HELPERS ── */
+/* ─────────────────────────────────────────────────────────────
+   LOGIN UI HELPERS
+───────────────────────────────────────────────────────────── */
 function showErr(id,msg){ const e=document.getElementById(id); e.textContent=msg; e.classList.add('show'); }
 function hideAlerts(){
   ['si-err','su-err','su-ok'].forEach(id=>{ const e=document.getElementById(id); e.classList.remove('show'); e.textContent=''; });
@@ -515,7 +536,9 @@ function setLoading(p,on){
   document.getElementById(p+'-label').textContent=on?(p==='si'?'Signing in…':'Creating account…'):(p==='si'?'Sign In':'Create Account');
 }
 
-/* ── TABS ── */
+/* ─────────────────────────────────────────────────────────────
+   TABS
+───────────────────────────────────────────────────────────── */
 document.getElementById('tab-signin').addEventListener('click',()=>switchTab('signin'));
 document.getElementById('tab-signup').addEventListener('click',()=>switchTab('signup'));
 function switchTab(t){
@@ -526,7 +549,9 @@ function switchTab(t){
   });
 }
 
-/* ── SIGN IN ── */
+/* ─────────────────────────────────────────────────────────────
+   SIGN IN
+───────────────────────────────────────────────────────────── */
 document.getElementById('si-btn').addEventListener('click',signIn);
 document.getElementById('si-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') signIn(); });
 async function signIn(){
@@ -554,7 +579,9 @@ async function signIn(){
   finally{ setLoading('si',false); }
 }
 
-/* ── SIGN UP ── */
+/* ─────────────────────────────────────────────────────────────
+   SIGN UP
+───────────────────────────────────────────────────────────── */
 document.getElementById('su-btn').addEventListener('click',signUp);
 document.getElementById('su-pass2').addEventListener('keydown',e=>{ if(e.key==='Enter') signUp(); });
 async function signUp(){
@@ -579,33 +606,42 @@ async function signUp(){
   finally{ setLoading('su',false); }
 }
 
-/* ── SCREEN TRANSITIONS ── */
+/* ─────────────────────────────────────────────────────────────
+   SCREEN TRANSITIONS
+───────────────────────────────────────────────────────────── */
 function showLogin(){
   document.getElementById('screen-login').classList.remove('hidden');
   document.getElementById('screen-dash').classList.remove('visible');
 }
-function showDash(email){
+async function showDash(email){
   document.getElementById('screen-login').classList.add('hidden');
   document.getElementById('screen-dash').classList.add('visible');
   document.getElementById('userEmail').textContent=email||Session.email();
-  renderDocs();
   addAudit('au','LOGIN — authenticated via Identity Platform');
+  await loadDocs(); // ← fetch real documents from GCP on every login
 }
 
-/* ── LOGOUT ── */
+/* ─────────────────────────────────────────────────────────────
+   LOGOUT
+───────────────────────────────────────────────────────────── */
 document.getElementById('logoutBtn').addEventListener('click',()=>{
   Session.clear();
+  S.docs=[]; S.events=0; S.storage=0;
   ['si-email','si-pass','su-email','su-pass','su-pass2'].forEach(id=>document.getElementById(id).value='');
   hideAlerts(); switchTab('signin'); showLogin();
 });
 
-/* ── DASHBOARD STATE ── */
+/* ─────────────────────────────────────────────────────────────
+   DASHBOARD STATE
+───────────────────────────────────────────────────────────── */
 const S={docs:[],events:0,storage:0};
 let pendingDel=null,pendingShare=null;
 const PT={dashboard:'DASHBOARD',documents:'DOCUMENTS',upload:'UPLOAD',audit:'AUDIT LOG',infra:'INFRASTRUCTURE'};
 const PC={dashboard:'Overview',documents:'Documents',upload:'Upload New',audit:'Audit Log',infra:'Tech Stack'};
 
-/* ── NAVIGATION ── */
+/* ─────────────────────────────────────────────────────────────
+   NAVIGATION
+───────────────────────────────────────────────────────────── */
 function navTo(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('pg-'+page).classList.add('active');
@@ -618,7 +654,9 @@ document.querySelectorAll('[data-page]').forEach(el=>{
   el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' ') navTo(el.dataset.page); });
 });
 
-/* ── STATS ── */
+/* ─────────────────────────────────────────────────────────────
+   STATS
+───────────────────────────────────────────────────────────── */
 function stats(){
   document.getElementById('s-total').textContent=S.docs.length;
   document.getElementById('s-enc').textContent=S.docs.length;
@@ -627,7 +665,9 @@ function stats(){
   document.getElementById('navBadge').textContent=S.docs.length;
 }
 
-/* ── RENDER DOCS — XSS-safe via esc() ── */
+/* ─────────────────────────────────────────────────────────────
+   RENDER DOCS — XSS-safe via esc()
+───────────────────────────────────────────────────────────── */
 function renderDocs(){
   ['recentList','allList'].forEach((id,idx)=>{
     const el=document.getElementById(id);
@@ -640,19 +680,53 @@ function renderDocs(){
         <div><span class="enc-badge">✓ CMEK</span></div>
         <div class="doc-size">${esc(String(doc.size))} MB</div>
         <div class="doc-acts">
-          <button class="act-btn dl" title="Download" data-id="${esc(doc.id)}" data-name="${esc(doc.name)}" data-action="share">⬇</button>
-          <button class="act-btn sh" title="Share" data-id="${esc(doc.id)}" data-name="${esc(doc.name)}" data-action="share">🔗</button>
+          <button class="act-btn dl" title="Download" data-id="${esc(doc.id)}" data-name="${esc(doc.name)}" data-action="download">⬇</button>
+          <button class="act-btn sh" title="Copy share link" data-id="${esc(doc.id)}" data-name="${esc(doc.name)}" data-action="share">🔗</button>
           <button class="act-btn rm" title="Delete" data-id="${esc(doc.id)}" data-name="${esc(doc.name)}" data-idx="${i}" data-action="del">🗑</button>
         </div>
       </div>`).join('');
+    // Download: get signed URL and open in new tab
+    el.querySelectorAll('[data-action="download"]').forEach(b=>b.addEventListener('click',()=>downloadDoc(b.dataset.id,b.dataset.name)));
+    // Share: get signed URL and copy to clipboard
     el.querySelectorAll('[data-action="share"]').forEach(b=>b.addEventListener('click',()=>openShare(b.dataset.id,b.dataset.name)));
     el.querySelectorAll('[data-action="del"]').forEach(b=>b.addEventListener('click',()=>openDel(b.dataset.id,b.dataset.name,+b.dataset.idx)));
   });
   stats();
 }
 
-/* ── UPLOAD ── */
+/* ─────────────────────────────────────────────────────────────
+   LOAD DOCS FROM GCP — called on login and after upload
+   Expects the backend to return one of:
+     { documents: [{ id, name, size }] }   ← preferred
+     [{ id, name, size }]                  ← array also accepted
+   size can be in bytes (auto-converted) or already in MB.
+───────────────────────────────────────────────────────────── */
+async function loadDocs(){
+  try{
+    const data = await apiReq('GET', '/documents');
+    const list = Array.isArray(data) ? data : (data.documents || []);
+    S.docs = list.map(d => {
+      // Accept size as bytes or MB — convert if >1000 (likely bytes)
+      const raw = parseFloat(d.size) || 0;
+      const mb  = raw > 1000 ? parseFloat((raw/1048576).toFixed(2)) : parseFloat(raw.toFixed(2));
+      return { id: String(d.id||d.name||d.object_name), name: d.name||d.fileName||d.file_name||'document.pdf', size: mb };
+    });
+    S.storage = parseFloat(S.docs.reduce((acc,d)=>acc+d.size,0).toFixed(2));
+    renderDocs();
+    addAudit('sy','SYNC — '+S.docs.length+' document(s) loaded from Cloud Storage');
+  }catch(e){
+    console.warn('[FoxVault] loadDocs failed:',e.message);
+    addAudit('dl','SYNC ERROR — could not load documents: '+e.message);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   UPLOAD — real POST to GCP via API Gateway
+   Progress bar animates to 80% while the request is in-flight,
+   then jumps to 100% on success.
+───────────────────────────────────────────────────────────── */
 function uid(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{ const r=Math.random()*16|0; return(c==='x'?r:(r&3|8)).toString(16); }); }
+
 function setupDZ(dzId,fiId){
   const dz=document.getElementById(dzId), fi=document.getElementById(fiId);
   dz.addEventListener('click',()=>fi.click());
@@ -662,24 +736,91 @@ function setupDZ(dzId,fiId){
   dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('drag'); if(e.dataTransfer.files.length) go(e.dataTransfer.files[0]); });
   fi.addEventListener('change',e=>{ if(e.target.files.length) go(e.target.files[0]); e.target.value=''; });
 }
-function go(file){
-  if(!file.name.toLowerCase().endsWith('.pdf')){ toast('❌','Invalid File','Only PDF files accepted'); addAudit('dl','REJECTED — '+esc(file.name)+' · not a PDF'); return; }
-  const size=parseFloat(((file.size/1048576)||(Math.random()*4+.5)).toFixed(2));
-  const doc={id:uid(),name:file.name,size};
-  const bar=document.getElementById('progBar'),fill=document.getElementById('progFill'),pct=document.getElementById('progPct');
+
+async function go(file){
+  if(!file.name.toLowerCase().endsWith('.pdf')){
+    toast('❌','Invalid File','Only PDF files accepted');
+    addAudit('dl','REJECTED — '+esc(file.name)+' · not a PDF');
+    return;
+  }
+  if(!CFG.gatewayUrl){
+    toast('❌','Config Error','Gateway URL not loaded — check Vercel env vars');
+    return;
+  }
+
+  const sizeMB = parseFloat((file.size/1048576).toFixed(2));
+  const bar=document.getElementById('progBar'), fill=document.getElementById('progFill'), pct=document.getElementById('progPct');
   document.getElementById('progFile').textContent=file.name;
-  bar.classList.add('show'); fill.style.width='0%';
-  addAudit('up','UPLOAD STARTED — '+esc(file.name)+' · '+size+' MB');
-  let p=0;
-  const t=setInterval(()=>{
-    p+=Math.random()*18+4;
-    if(p>=100){ p=100; clearInterval(t); fill.style.width='100%'; pct.textContent='100%';
-      setTimeout(()=>{ bar.classList.remove('show'); S.docs.unshift(doc); S.storage=parseFloat((S.storage+doc.size).toFixed(2)); renderDocs(); addAudit('up','UPLOAD COMPLETE — '+esc(file.name)+' · encrypted · CMEK'); toast('✅','Document Encrypted',file.name+' is now in the vault'); },400);
-    }else{ fill.style.width=p+'%'; pct.textContent=Math.floor(p)+'%'; }
-  },90);
+  bar.classList.add('show'); fill.style.width='0%'; pct.textContent='0%';
+  addAudit('up','UPLOAD STARTED — '+esc(file.name)+' · '+sizeMB+' MB');
+
+  // Animate bar to 80% while the real upload is in-flight
+  let p=0, stopped=false;
+  const ticker=setInterval(()=>{
+    if(stopped) return;
+    p = Math.min(p + Math.random()*7+2, 80);
+    fill.style.width=p+'%'; pct.textContent=Math.floor(p)+'%';
+  },200);
+
+  try{
+    const fd = new FormData();
+    fd.append('file', file);          // key must match what your Cloud Run function expects
+    // fd.append('filename', file.name); // uncomment if your function needs this separately
+
+    const data = await apiReq('POST', '/upload', fd);
+
+    // Build the local doc record from what the backend returns
+    const doc = {
+      id:   String(data.id   || data.object_name || data.name || uid()),
+      name: String(data.name || data.fileName     || file.name),
+      size: (() => {
+        const raw = parseFloat(data.size) || file.size;
+        return raw > 1000 ? parseFloat((raw/1048576).toFixed(2)) : parseFloat(raw.toFixed(2));
+      })()
+    };
+
+    stopped=true; clearInterval(ticker);
+    fill.style.width='100%'; pct.textContent='100%';
+
+    setTimeout(()=>{
+      bar.classList.remove('show');
+      S.docs.unshift(doc);
+      S.storage = parseFloat((S.storage + doc.size).toFixed(2));
+      renderDocs();
+      addAudit('up','UPLOAD COMPLETE — '+esc(doc.name)+' · encrypted · CMEK');
+      toast('✅','Document Encrypted', doc.name+' is now in the vault');
+    }, 400);
+
+  }catch(err){
+    stopped=true; clearInterval(ticker);
+    bar.classList.remove('show');
+    fill.style.width='0%'; pct.textContent='0%';
+    addAudit('dl','UPLOAD FAILED — '+esc(file.name)+' · '+err.message);
+    toast('❌','Upload Failed', err.message);
+  }
 }
 
-/* ── AUDIT ── */
+/* ─────────────────────────────────────────────────────────────
+   DOWNLOAD — gets a signed URL from GCP and opens it
+───────────────────────────────────────────────────────────── */
+async function downloadDoc(id, name){
+  addAudit('dn','DOWNLOAD REQUEST — '+esc(name));
+  try{
+    const data = await apiReq('GET', '/documents/'+encodeURIComponent(id)+'/url');
+    const url = data.url || data.signedUrl || data.signed_url || data.download_url;
+    if(!url) throw new Error('No URL in response');
+    window.open(url, '_blank', 'noopener');
+    addAudit('dn','SIGNED URL — '+esc(name)+' · 5 min expiry · opened');
+    toast('✅','Download Started', name);
+  }catch(e){
+    addAudit('dl','DOWNLOAD FAILED — '+esc(name)+' · '+e.message);
+    toast('❌','Download Failed', e.message);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   AUDIT
+───────────────────────────────────────────────────────────── */
 function addAudit(type,msg){
   S.events++;
   const s=document.getElementById('auditStream');
@@ -695,32 +836,73 @@ document.getElementById('clearAuditBtn').addEventListener('click',()=>{
   document.getElementById('auditStream').innerHTML='<div class="audit-entry"><div class="a-dot sy"></div><div><div class="a-event"><strong>LOG CLEARED</strong></div><div class="a-meta">Events persist in Cloud Audit Logs and BigQuery</div></div></div>';
 });
 
-/* ── MODALS ── */
+/* ─────────────────────────────────────────────────────────────
+   MODALS
+───────────────────────────────────────────────────────────── */
 function openDel(id,name,idx){ pendingDel={id,name,idx}; document.getElementById('delId').value=id; document.getElementById('delModal').classList.add('open'); }
 function openShare(id,name){ pendingShare={id,name}; document.getElementById('shareId').value=id; document.getElementById('shareModal').classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); pendingDel=null; pendingShare=null; }
+
 document.getElementById('delCancel').addEventListener('click',()=>closeModal('delModal'));
 document.getElementById('shareCancel').addEventListener('click',()=>closeModal('shareModal'));
-document.getElementById('delConfirm').addEventListener('click',()=>{
+
+/* DELETE — calls the real GCP API, then removes from local state */
+document.getElementById('delConfirm').addEventListener('click', async ()=>{
   if(!pendingDel) return;
-  const{name,idx}=pendingDel; S.storage=parseFloat((S.storage-S.docs[idx].size).toFixed(2)); S.docs.splice(idx,1);
-  closeModal('delModal'); renderDocs(); addAudit('dl','DELETE — '+esc(name)+' removed from vault'); toast('⚠️','Deleted',name+' removed');
+  const {id, name, idx} = pendingDel;
+  closeModal('delModal');
+  addAudit('dl','DELETE REQUEST — '+esc(name));
+  try{
+    await apiReq('DELETE', '/documents/'+encodeURIComponent(id));
+    S.storage = parseFloat((S.storage - (S.docs[idx]?.size||0)).toFixed(2));
+    S.docs.splice(idx,1);
+    renderDocs();
+    addAudit('dl','DELETE CONFIRMED — '+esc(name)+' removed from vault');
+    toast('⚠️','Deleted', name+' removed');
+  }catch(e){
+    addAudit('dl','DELETE FAILED — '+esc(name)+' · '+e.message);
+    toast('❌','Delete Failed', e.message);
+  }
 });
-document.getElementById('shareConfirm').addEventListener('click',()=>{
-  if(!pendingShare) return; closeModal('shareModal');
-  addAudit('dn','SIGNED URL — '+esc(pendingShare.name)+' · 5 min expiry'); toast('✅','URL Generated','Signed URL ready · expires in 5 min');
+
+/* SHARE — gets a signed URL from GCP and copies it to clipboard */
+document.getElementById('shareConfirm').addEventListener('click', async ()=>{
+  if(!pendingShare) return;
+  const {id, name} = pendingShare;
+  closeModal('shareModal');
+  addAudit('dn','SIGNED URL REQUEST — '+esc(name));
+  try{
+    const data = await apiReq('GET', '/documents/'+encodeURIComponent(id)+'/url');
+    const url = data.url || data.signedUrl || data.signed_url || data.download_url;
+    if(!url) throw new Error('No URL returned from gateway');
+    await navigator.clipboard.writeText(url).catch(()=>{
+      // Clipboard may be blocked in non-HTTPS — show URL in toast instead
+      toast('🔗','URL Generated (copy manually)', url);
+      return;
+    });
+    addAudit('dn','SIGNED URL — '+esc(name)+' · 5 min expiry · copied to clipboard');
+    toast('✅','URL Copied to Clipboard', 'Signed URL expires in 5 minutes');
+  }catch(e){
+    addAudit('dl','SIGNED URL FAILED — '+esc(name)+' · '+e.message);
+    toast('❌','URL Generation Failed', e.message);
+  }
 });
+
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open')); });
 
-/* ── TOAST ── */
+/* ─────────────────────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────────────────────── */
 function toast(icon,title,sub){
   const a=document.getElementById('toastArea'), el=document.createElement('div'); el.className='toast';
   el.innerHTML=`<div class="t-icon">${icon}</div><div><div class="t-title">${esc(title)}</div><div class="t-sub">${esc(sub)}</div></div>`;
   a.appendChild(el); setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),220); },3500);
 }
 
-/* ── INIT ── */
+/* ─────────────────────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────────────────────── */
 (async function(){
   await loadConfig();
   setupDZ('dz1','fi1');
