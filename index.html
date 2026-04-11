@@ -487,12 +487,11 @@ function esc(s){
 
 /* ─────────────────────────────────────────────────────────────
    API HELPER  — all calls go through the GCP API Gateway.
-   NOTE: If your Cloud Run function paths differ from the ones
-   below, update the paths here to match your gateway config:
-     POST   /upload           — upload a PDF
-     GET    /documents        — list all documents
-     DELETE /documents/{id}   — delete a document
-     GET    /documents/{id}/url — get a 5-min signed download URL
+   API paths (match the gateway spec exactly):
+     POST   /documents              — upload a PDF
+     GET    /documents              — list all documents
+     GET    /documents/{id}         — get signed download URL
+     DELETE /documents/{id}         — delete a document
 ───────────────────────────────────────────────────────────── */
 async function apiReq(method, path, body){
   const opts = {
@@ -853,13 +852,17 @@ document.getElementById('shareCancel').addEventListener('click',()=>closeModal('
 /* DELETE — calls the real GCP API, then removes from local state */
 document.getElementById('delConfirm').addEventListener('click', async ()=>{
   if(!pendingDel) return;
-  const {id, name, idx} = pendingDel;
+  const {id, name} = pendingDel;
   closeModal('delModal');
   addAudit('dl','DELETE REQUEST — '+esc(name));
   try{
     await apiReq('DELETE', '/documents/'+encodeURIComponent(id));
-    S.storage = parseFloat((S.storage - (S.docs[idx]?.size||0)).toFixed(2));
-    S.docs.splice(idx,1);
+    // Find by id rather than stale index (list may have refreshed since modal opened)
+    const liveIdx = S.docs.findIndex(d => d.id === id);
+    if(liveIdx !== -1){
+      S.storage = parseFloat((S.storage - S.docs[liveIdx].size).toFixed(2));
+      S.docs.splice(liveIdx, 1);
+    }
     renderDocs();
     addAudit('dl','DELETE CONFIRMED — '+esc(name)+' removed from vault');
     toast('⚠️','Deleted', name+' removed');
@@ -908,10 +911,22 @@ function toast(icon,title,sub){
    INIT
 ───────────────────────────────────────────────────────────── */
 (async function(){
+  // Immediately hide login if a session exists — prevents flash of login screen on refresh
+  if(Session.token()){
+    document.getElementById('screen-login').classList.add('hidden');
+    document.getElementById('screen-dash').classList.add('visible');
+    document.getElementById('userEmail').textContent = Session.email();
+    renderDocs(); // show empty state instantly while docs load
+  }
   await loadConfig();
   setupDZ('dz1','fi1');
   setupDZ('dz2','fi2');
-  Session.token() ? showDash(Session.email()) : showLogin();
+  if(Session.token()){
+    addAudit('au','SESSION RESTORED — loading vault…');
+    await loadDocs();
+  } else {
+    showLogin();
+  }
 })();
 </script>
 </body>
