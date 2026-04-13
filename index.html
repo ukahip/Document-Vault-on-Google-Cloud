@@ -189,9 +189,9 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 .prog-fill{height:100%;background:linear-gradient(90deg,#059669,var(--emerald));border-radius:4px;width:0;
   transition:width .25s ease;box-shadow:0 0 8px rgba(16,185,129,.5);}
 .docs-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--r-xl);overflow:hidden;}
-.docs-head{display:grid;grid-template-columns:40px 1fr 110px 80px 110px;gap:12px;padding:11px 18px;
+.docs-head{display:grid;grid-template-columns:40px 1fr 110px 80px;gap:12px;padding:11px 18px;
   border-bottom:1px solid var(--bd);font-family:var(--fm);font-size:10px;letter-spacing:.14em;color:var(--t4);text-transform:uppercase;}
-.doc-row{display:grid;grid-template-columns:40px 1fr 110px 80px 110px;gap:12px;align-items:center;
+.doc-row{display:grid;grid-template-columns:40px 1fr 110px 80px;gap:12px;align-items:center;
   padding:14px 18px;border-bottom:1px solid var(--bd);transition:background .15s;position:relative;}
 .doc-row:last-child{border-bottom:none;}
 .doc-row:hover{background:var(--ink-3);}
@@ -205,13 +205,11 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 .enc-badge{font-family:var(--fm);font-size:10px;color:var(--emerald);background:var(--em-d);
   border:1px solid rgba(16,185,129,.2);border-radius:20px;padding:3px 10px;display:inline-flex;align-items:center;gap:4px;}
 .doc-size{font-family:var(--fm);font-size:13px;color:var(--t3);text-align:right;}
-.doc-acts{display:flex;gap:5px;}
-.act-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:transparent;
-  color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;
-  transition:all .15s var(--ease);}
-.act-btn.dl:hover{background:var(--sky-d);border-color:rgba(56,189,248,.3);color:var(--sky);}
-.act-btn.sh:hover{background:var(--amb-d);border-color:rgba(245,158,11,.3);color:var(--amber);}
-.act-btn.rm:hover{background:var(--rose-d);border-color:rgba(244,63,94,.3);color:var(--rose);}
+
+
+
+
+
 .empty-state{text-align:center;padding:52px 20px;color:var(--t3);}
 .empty-icon{font-size:40px;margin-bottom:14px;opacity:.3;}
 .empty-state p{font-size:15px;}
@@ -239,28 +237,25 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 .stack-name{font-family:var(--fh);font-size:15px;font-weight:700;margin-bottom:6px;color:var(--t1);}
 .stack-role{font-size:13px;color:var(--t3);margin-bottom:14px;line-height:1.65;}
 .stack-tag{font-family:var(--fm);font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid;display:inline-block;}
-.modal-bg{position:fixed;inset:0;background:rgba(4,7,14,.87);backdrop-filter:blur(14px);
-  z-index:100;display:none;align-items:center;justify-content:center;}
-.modal-bg.open{display:flex;animation:fadeIn .18s ease;}
+
+
 .modal{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r-xl);
   padding:32px 36px;max-width:450px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.7);
   animation:modalPop .25s cubic-bezier(.34,1.56,.64,1);}
-.modal-title{font-family:var(--fh);font-size:19px;font-weight:800;margin-bottom:8px;}
-.modal-body{font-size:15px;color:var(--t3);margin-bottom:24px;line-height:1.7;}
-.m-field{margin-bottom:14px;}
-.m-label{font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--t3);text-transform:uppercase;margin-bottom:6px;}
-.m-input{width:100%;background:var(--ink);border:1px solid var(--bd);border-radius:var(--r);
-  padding:11px 13px;font-family:var(--fm);font-size:13px;color:var(--t1);outline:none;transition:border-color .15s;}
-.m-input:focus{border-color:rgba(16,185,129,.4);}
-.modal-acts{display:flex;gap:10px;}
-.mbtn{flex:1;padding:11px 16px;border-radius:var(--r);font-family:var(--fh);font-size:12px;
-  font-weight:700;letter-spacing:.08em;cursor:pointer;border:1px solid;transition:all .18s;}
-.mbtn-ghost{background:transparent;border-color:var(--bd);color:var(--t3);}
-.mbtn-ghost:hover{background:var(--ink-3);color:var(--t2);}
-.mbtn-danger{background:var(--rose-d);border-color:rgba(244,63,94,.3);color:var(--rose);}
-.mbtn-danger:hover{background:rgba(244,63,94,.2);}
-.mbtn-primary{background:var(--em-d);border-color:rgba(16,185,129,.35);color:var(--emerald);}
-.mbtn-primary:hover{background:var(--em-b);}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 .toasts{position:fixed;top:18px;right:18px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
 .toast{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r);
   padding:13px 16px;display:flex;align-items:center;gap:10px;min-width:270px;max-width:340px;
@@ -286,8 +281,8 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 @keyframes modalPop{from{opacity:0;transform:scale(.93) translateY(12px);}to{opacity:1;transform:scale(1) translateY(0);}}
 @keyframes spin{to{transform:rotate(360deg);}}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--emerald);}50%{opacity:.5;box-shadow:0 0 4px var(--emerald);}}
-@media(max-width:960px){.stats-row{grid-template-columns:repeat(2,1fr);}.stack-grid{grid-template-columns:repeat(2,1fr);}.docs-head,.doc-row{grid-template-columns:36px 1fr 90px 80px;}.docs-head>:nth-child(3),.doc-row>:nth-child(3){display:none;}}
-@media(max-width:760px){#screen-login{grid-template-columns:1fr;}.login-left{display:none;}.login-right{padding:40px 20px;}.auth-box{max-width:100%;}.auth-inner{padding:28px 22px;}.sidebar{display:none;}.content{padding:18px;padding-bottom:88px;}.topbar{padding:0 18px;height:54px;}.stats-row{grid-template-columns:1fr 1fr;gap:10px;}.stat-card{padding:14px 15px;}.stat-value{font-size:28px;}.stack-grid{grid-template-columns:1fr 1fr;gap:10px;}.bottom-nav{display:block;}.docs-head,.doc-row{grid-template-columns:34px 1fr 80px;}.docs-head>:nth-child(4),.doc-row>:nth-child(4){display:none;}}
+@media(max-width:960px){.stats-row{grid-template-columns:repeat(2,1fr);}.stack-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:760px){#screen-login{grid-template-columns:1fr;}.login-left{display:none;}.login-right{padding:40px 20px;}.auth-box{max-width:100%;}.auth-inner{padding:28px 22px;}.sidebar{display:none;}.content{padding:18px;padding-bottom:88px;}.topbar{padding:0 18px;height:54px;}.stats-row{grid-template-columns:1fr 1fr;gap:10px;}.stat-card{padding:14px 15px;}.stat-value{font-size:28px;}.stack-grid{grid-template-columns:1fr 1fr;gap:10px;}.bottom-nav{display:block;}.docs-head,.doc-row{grid-template-columns:34px 1fr 80px;}}
 @media(max-width:420px){.stats-row{grid-template-columns:1fr 1fr;}.stack-grid{grid-template-columns:1fr;}}
 </style>
 </head>
@@ -378,12 +373,12 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
         <input type="file" id="fi1" accept=".pdf" style="display:none"/>
         <div class="prog-wrap" id="progBar"><div class="prog-top"><span class="prog-file" id="progFile">file.pdf</span><span class="prog-pct" id="progPct">0%</span></div><div class="prog-track"><div class="prog-fill" id="progFill"></div></div></div>
         <div class="sec-hd"><div class="sec-title"><div class="sec-icon">📂</div>RECENT DOCUMENTS</div><button class="sec-link" data-page="documents">View all →</button></div>
-        <div class="docs-card"><div class="docs-head"><span></span><span>Document</span><span>Encryption</span><span>Size</span><span>Actions</span></div><div id="recentList"><div class="empty-state"><div class="empty-icon">🔒</div><p>No documents yet. Upload your first PDF.</p></div></div></div>
+        <div class="docs-card"><div class="docs-head"><span></span><span>Document</span><span>Encryption</span><span>Size</span></div><div id="recentList"><div class="empty-state"><div class="empty-icon">🔒</div><p>No documents yet. Upload your first PDF.</p></div></div></div>
       </section>
       <!-- DOCUMENTS PAGE -->
       <section class="page" id="pg-documents">
         <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title"><div class="sec-icon">📂</div>ALL DOCUMENTS</div><button class="sec-link" data-page="upload">+ Upload New</button></div>
-        <div class="docs-card"><div class="docs-head"><span></span><span>Document</span><span>Encryption</span><span>Size</span><span>Actions</span></div><div id="allList"><div class="empty-state"><div class="empty-icon">🔒</div><p>Your encrypted documents will appear here.</p></div></div></div>
+        <div class="docs-card"><div class="docs-head"><span></span><span>Document</span><span>Encryption</span><span>Size</span></div><div id="allList"><div class="empty-state"><div class="empty-icon">🔒</div><p>Your encrypted documents will appear here.</p></div></div></div>
       </section>
       <!-- UPLOAD PAGE -->
       <section class="page" id="pg-upload">
@@ -425,9 +420,7 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
   </nav>
 </div>
 
-<!-- MODALS -->
-<div class="modal-bg" id="delModal" role="dialog" aria-modal="true"><div class="modal"><div class="modal-title">🗑 Delete Document</div><div class="modal-body">This action is permanent. If a retention policy is active, deletion will be blocked until it expires.</div><div class="m-field"><div class="m-label">Document ID</div><input class="m-input" id="delId" readonly/></div><div class="modal-acts"><button class="mbtn mbtn-ghost" id="delCancel">CANCEL</button><button class="mbtn mbtn-danger" id="delConfirm">DELETE</button></div></div></div>
-<div class="modal-bg" id="shareModal" role="dialog" aria-modal="true"><div class="modal"><div class="modal-title">🔗 Generate Signed URL</div><div class="modal-body">Creates a time-limited download link via GCP Service Account. Expires in <strong style="color:var(--emerald)">5 minutes</strong>.</div><div class="m-field"><div class="m-label">Document ID</div><input class="m-input" id="shareId" readonly/></div><div class="m-field"><div class="m-label">Expires In</div><input class="m-input" value="300 seconds (5 minutes)" readonly style="color:var(--t3)"/></div><div class="modal-acts"><button class="mbtn mbtn-ghost" id="shareCancel">CANCEL</button><button class="mbtn mbtn-primary" id="shareConfirm">GENERATE &amp; COPY URL</button></div></div></div>
+<!-- Modals removed —  download/share/delete not available in this version -->
 
 <div class="toasts" id="toastArea" aria-live="polite"></div>
 
@@ -639,7 +632,6 @@ document.getElementById('logoutBtn').addEventListener('click',()=>{
    DASHBOARD STATE
 ───────────────────────────────────────────────────────────── */
 const S={docs:[],events:0,storage:0};
-let pendingDel=null,pendingShare=null;
 const PT={dashboard:'DASHBOARD',documents:'DOCUMENTS',upload:'UPLOAD',audit:'AUDIT LOG',infra:'INFRASTRUCTURE'};
 const PC={dashboard:'Overview',documents:'Documents',upload:'Upload New',audit:'Audit Log',infra:'Tech Stack'};
 
@@ -683,17 +675,7 @@ function renderDocs(){
         <div style="overflow:hidden"><div class="doc-name" title="${esc(doc.name)}">${esc(doc.name)}</div><div class="doc-id">${esc(doc.id.substring(0,26))}…</div></div>
         <div><span class="enc-badge">✓ CMEK</span></div>
         <div class="doc-size">${esc(String(doc.size))} MB</div>
-        <div class="doc-acts">
-          <button class="act-btn dl" title="Download" data-id="${esc(doc.id)}" data-name="${esc(doc.name)}" data-action="download">⬇</button>
-          <button class="act-btn sh" title="Copy share link" data-id="${esc(doc.id)}" data-name="${esc(doc.name)}" data-action="share">🔗</button>
-          <button class="act-btn rm" title="Delete" data-id="${esc(doc.id)}" data-name="${esc(doc.name)}" data-idx="${i}" data-action="del">🗑</button>
-        </div>
       </div>`).join('');
-    // Download: get signed URL and open in new tab
-    el.querySelectorAll('[data-action="download"]').forEach(b=>b.addEventListener('click',()=>downloadDoc(b.dataset.id,b.dataset.name)));
-    // Share: get signed URL and copy to clipboard
-    el.querySelectorAll('[data-action="share"]').forEach(b=>b.addEventListener('click',()=>openShare(b.dataset.id,b.dataset.name)));
-    el.querySelectorAll('[data-action="del"]').forEach(b=>b.addEventListener('click',()=>openDel(b.dataset.id,b.dataset.name,+b.dataset.idx)));
   });
   stats();
 }
@@ -803,23 +785,7 @@ async function go(file){
   }
 }
 
-/* ─────────────────────────────────────────────────────────────
-   DOWNLOAD — gets a signed URL from GCP and opens it
-───────────────────────────────────────────────────────────── */
-async function downloadDoc(id, name){
-  addAudit('dn','DOWNLOAD REQUEST — '+esc(name));
-  try{
-    const data = await apiReq('GET', '/documents/'+encodeURIComponent(id));  // spec: GET /documents/{doc_id}
-    const url = data.url || data.download_url || data.signedUrl || data.signed_url;
-    if(!url) throw new Error('No URL in response');
-    window.open(url, '_blank', 'noopener');
-    addAudit('dn','SIGNED URL — '+esc(name)+' · 5 min expiry · opened');
-    toast('✅','Download Started', name);
-  }catch(e){
-    addAudit('dl','DOWNLOAD FAILED — '+esc(name)+' · '+e.message);
-    toast('❌','Download Failed', e.message);
-  }
-}
+
 
 /* ─────────────────────────────────────────────────────────────
    AUDIT
@@ -839,64 +805,7 @@ document.getElementById('clearAuditBtn').addEventListener('click',()=>{
   document.getElementById('auditStream').innerHTML='<div class="audit-entry"><div class="a-dot sy"></div><div><div class="a-event"><strong>LOG CLEARED</strong></div><div class="a-meta">Events persist in Cloud Audit Logs and BigQuery</div></div></div>';
 });
 
-/* ─────────────────────────────────────────────────────────────
-   MODALS
-───────────────────────────────────────────────────────────── */
-function openDel(id,name,idx){ pendingDel={id,name,idx}; document.getElementById('delId').value=id; document.getElementById('delModal').classList.add('open'); }
-function openShare(id,name){ pendingShare={id,name}; document.getElementById('shareId').value=id; document.getElementById('shareModal').classList.add('open'); }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); pendingDel=null; pendingShare=null; }
 
-document.getElementById('delCancel').addEventListener('click',()=>closeModal('delModal'));
-document.getElementById('shareCancel').addEventListener('click',()=>closeModal('shareModal'));
-
-/* DELETE — calls the real GCP API, then removes from local state */
-document.getElementById('delConfirm').addEventListener('click', async ()=>{
-  if(!pendingDel) return;
-  const {id, name} = pendingDel;
-  closeModal('delModal');
-  addAudit('dl','DELETE REQUEST — '+esc(name));
-  try{
-    await apiReq('DELETE', '/documents/'+encodeURIComponent(id));
-    // Find by id rather than stale index (list may have refreshed since modal opened)
-    const liveIdx = S.docs.findIndex(d => d.id === id);
-    if(liveIdx !== -1){
-      S.storage = parseFloat((S.storage - S.docs[liveIdx].size).toFixed(2));
-      S.docs.splice(liveIdx, 1);
-    }
-    renderDocs();
-    addAudit('dl','DELETE CONFIRMED — '+esc(name)+' removed from vault');
-    toast('⚠️','Deleted', name+' removed');
-  }catch(e){
-    addAudit('dl','DELETE FAILED — '+esc(name)+' · '+e.message);
-    toast('❌','Delete Failed', e.message);
-  }
-});
-
-/* SHARE — gets a signed URL from GCP and copies it to clipboard */
-document.getElementById('shareConfirm').addEventListener('click', async ()=>{
-  if(!pendingShare) return;
-  const {id, name} = pendingShare;
-  closeModal('shareModal');
-  addAudit('dn','SIGNED URL REQUEST — '+esc(name));
-  try{
-    const data = await apiReq('GET', '/documents/'+encodeURIComponent(id));  // spec: GET /documents/{doc_id}
-    const url = data.url || data.download_url || data.signedUrl || data.signed_url;
-    if(!url) throw new Error('No URL returned from gateway');
-    await navigator.clipboard.writeText(url).catch(()=>{
-      // Clipboard may be blocked in non-HTTPS — show URL in toast instead
-      toast('🔗','URL Generated (copy manually)', url);
-      return;
-    });
-    addAudit('dn','SIGNED URL — '+esc(name)+' · 5 min expiry · copied to clipboard');
-    toast('✅','URL Copied to Clipboard', 'Signed URL expires in 5 minutes');
-  }catch(e){
-    addAudit('dl','SIGNED URL FAILED — '+esc(name)+' · '+e.message);
-    toast('❌','URL Generation Failed', e.message);
-  }
-});
-
-document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open')); });
 
 /* ─────────────────────────────────────────────────────────────
    TOAST
