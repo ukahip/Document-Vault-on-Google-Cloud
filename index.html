@@ -435,8 +435,22 @@ let CFG = { gatewayUrl:'', identityApiKey:'' };
 async function loadConfig(){
   try{
     const r = await fetch('/api/config');
-    if(r.ok) CFG = await r.json();
-  }catch(e){ console.error('[FoxVault] config error',e.message); }
+    if(!r.ok){
+      console.error('[FoxVault] config fetch failed:', r.status, r.statusText);
+      toast('⚠️','Config Error', '/api/config returned '+r.status+' — check Vercel env vars');
+      return;
+    }
+    const data = await r.json();
+    if(!data.gatewayUrl || !data.identityApiKey){
+      console.error('[FoxVault] config incomplete:', data);
+      toast('⚠️','Config Incomplete', 'gatewayUrl or identityApiKey missing from /api/config');
+      return;
+    }
+    CFG = data;
+  }catch(e){
+    console.error('[FoxVault] config error', e.message);
+    toast('⚠️','Config Error', 'Could not load /api/config — '+e.message);
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -487,10 +501,19 @@ function esc(s){
      DELETE /documents/{id}         — delete a document
 ───────────────────────────────────────────────────────────── */
 async function apiReq(method, path, body){
+  if(!CFG.gatewayUrl){
+    throw new Error('Gateway URL not configured - check Vercel environment variables');
+  }
+
+  const url = CFG.gatewayUrl.replace(/\/$/, '') + path;
   const opts = {
     method,
-    headers: { 'Authorization': 'Bearer ' + Session.token() }
+    headers: {
+      'Authorization': 'Bearer ' + Session.token()
+    },
+    mode: 'cors'
   };
+
   if(body instanceof File || body instanceof Blob){
     // ── Send raw PDF bytes — matches request.get_data() in Cloud Run ──
     opts.headers['Content-Type'] = 'application/pdf';
@@ -502,13 +525,23 @@ async function apiReq(method, path, body){
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
-  const res = await fetch(CFG.gatewayUrl + path, opts);
-  if(!res.ok){
-    let msg = res.statusText;
-    try{ const d=await res.json(); msg = d.error||d.message||msg; }catch(_){}
-    throw new Error(msg);
+
+  try{
+    const res = await fetch(url, opts);
+    if(!res.ok){
+      let msg = res.statusText;
+      try{ const d=await res.json(); msg = d.error||d.message||msg; }catch(_){}
+      throw new Error(msg);
+    }
+    if(res.status === 204) return {};
+    return res.json();
+  }catch(e){
+    if(e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.name === 'TypeError'){
+      console.error('[FoxVault] CORS/Network error:', e);
+      throw new Error('CORS or network error - check API Gateway configuration and allowCors setting');
+    }
+    throw e;
   }
-  return res.json();
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -689,20 +722,25 @@ function renderDocs(){
 ───────────────────────────────────────────────────────────── */
 async function loadDocs(){
   try{
+    console.log('[FoxVault] Loading docs from:', CFG.gatewayUrl + '/documents');
     const data = await apiReq('GET', '/documents');
     const list = Array.isArray(data) ? data : (data.documents || []);
     S.docs = list.map(d => {
-      // Accept size as bytes or MB — convert if >1000 (likely bytes)
       const raw = parseFloat(d.size) || 0;
       const mb  = raw > 1000 ? parseFloat((raw/1048576).toFixed(2)) : parseFloat(raw.toFixed(2));
-      return { id: String(d.id||d.name||d.object_name), name: d.name||d.fileName||d.file_name||'document.pdf', size: mb };
+      return {
+        id: String(d.id||d.doc_id||d.name||'unknown-' + Math.random().toString(36).substr(2,9)),
+        name: d.name||d.original_name||d.fileName||d.file_name||'document.pdf',
+        size: mb
+      };
     });
     S.storage = parseFloat(S.docs.reduce((acc,d)=>acc+d.size,0).toFixed(2));
     renderDocs();
-    addAudit('sy','SYNC — '+S.docs.length+' document(s) loaded from Cloud Storage');
+    addAudit('sy','SYNC — '+S.docs.length+' document(s) loaded');
   }catch(e){
-    console.warn('[FoxVault] loadDocs failed:',e.message);
-    addAudit('dl','SYNC ERROR — could not load documents: '+e.message);
+    console.error('[FoxVault] loadDocs failed:', e);
+    addAudit('dl','SYNC ERROR — '+e.message);
+    toast('❌','Failed to load documents', e.message.includes('CORS') ? 'CORS error - check API Gateway config' : e.message);
   }
 }
 
@@ -780,8 +818,9 @@ async function go(file){
     stopped=true; clearInterval(ticker);
     bar.classList.remove('show');
     fill.style.width='0%'; pct.textContent='0%';
+    console.error('[FoxVault] Upload error:', err);
     addAudit('dl','UPLOAD FAILED — '+esc(file.name)+' · '+err.message);
-    toast('❌','Upload Failed', err.message);
+    toast('❌','Upload Failed', err.message.includes('CORS') ? 'CORS error - check API Gateway allowCors setting' : err.message);
   }
 }
 
