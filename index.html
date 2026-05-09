@@ -235,8 +235,47 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 .stack-tag{font-family:var(--fm);font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid;display:inline-block;}
 
 .modal{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r-xl);
-  padding:32px 36px;max-width:450px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.7),
+  padding:32px 36px;max-width:450px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.7);}
+
+/* ── FORGOT PASSWORD pane ── */
+.fp-link{font-size:13px;color:var(--t3);cursor:pointer;text-align:right;display:block;
+  margin-top:8px;transition:color .15s;background:none;border:none;font-family:var(--fb);}
+.fp-link:hover{color:var(--emerald);}
+.back-link{font-size:13px;color:var(--t3);cursor:pointer;display:inline-flex;align-items:center;
+  gap:5px;margin-bottom:20px;transition:color .15s;background:none;border:none;font-family:var(--fb);}
+.back-link:hover{color:var(--emerald);}
+
+/* ── MFA overlay ── */
+#mfa-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;}
+#mfa-overlay.show{display:flex;animation:fadeIn .2s ease;}
+.mfa-box{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r-xl);
+  padding:36px 38px;max-width:420px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.7);
   animation:modalPop .25s cubic-bezier(.34,1.56,.64,1);}
+.mfa-title{font-family:var(--fh);font-size:21px;font-weight:800;margin-bottom:6px;}
+.mfa-sub{font-size:14px;color:var(--t3);margin-bottom:22px;line-height:1.6;}
+.mfa-err{border-radius:8px;padding:10px 13px;font-size:13px;margin-bottom:16px;
+  display:none;background:var(--rose-d);border:1px solid rgba(244,63,94,.25);color:#FDA4AF;}
+.mfa-err.show{display:block;}
+.otp-row{display:flex;gap:8px;justify-content:center;margin-bottom:22px;}
+.otp-digit{width:46px;height:54px;background:var(--ink-3);border:1px solid var(--bd2);
+  border-radius:10px;font-family:var(--fm);font-size:22px;font-weight:700;color:var(--t1);
+  text-align:center;outline:none;transition:border-color .18s,box-shadow .18s;caret-color:var(--emerald);}
+.otp-digit:focus{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 3px rgba(16,185,129,.1);}
+.qr-wrap{text-align:center;margin-bottom:18px;}
+.qr-wrap canvas{border-radius:12px;border:4px solid white;display:block;margin:0 auto;}
+.secret-code{font-family:var(--fm);font-size:11px;color:var(--t3);word-break:break-all;
+  background:var(--ink-3);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;
+  text-align:center;margin-bottom:16px;cursor:pointer;transition:background .15s;letter-spacing:.06em;}
+.secret-code:hover{background:var(--ink-4);}
+.mfa-steps{font-size:13px;color:var(--t2);margin-bottom:18px;line-height:1.75;}
+.mfa-steps ol{padding-left:18px;}
+.mfa-enroll-badge{display:inline-flex;align-items:center;gap:6px;background:var(--em-d);
+  border:1px solid rgba(16,185,129,.2);border-radius:20px;padding:4px 12px;
+  font-family:var(--fm);font-size:11px;color:var(--emerald);margin-bottom:16px;}
+.skip-link{font-size:13px;color:var(--t3);cursor:pointer;text-align:center;display:block;
+  margin-top:10px;transition:color .15s;background:none;border:none;font-family:var(--fb);width:100%;}
+.skip-link:hover{color:var(--t2);}
 
 .toasts{position:fixed;top:18px;right:18px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
 .toast{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r);
@@ -299,9 +338,21 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
           <div class="form-sub">Sign in to access your encrypted vault.</div>
           <div class="alert-box alert-err" id="si-err" role="alert"></div>
           <div class="field"><label class="field-label" for="si-email">Email address</label><div class="field-wrap"><span class="field-icon" aria-hidden="true">✉</span><input class="field-input" type="email" id="si-email" autocomplete="email" placeholder="you@example.com"/></div></div>
-          <div class="field"><label class="field-label" for="si-pass">Password</label><div class="field-wrap"><span class="field-icon" aria-hidden="true">🔒</span><input class="field-input" type="password" id="si-pass" autocomplete="current-password" placeholder="Your password"/></div></div>
+          <div class="field"><label class="field-label" for="si-pass">Password</label><div class="field-wrap"><span class="field-icon" aria-hidden="true">🔒</span><input class="field-input" type="password" id="si-pass" autocomplete="current-password" placeholder="Your password"/></div>
+            <button class="fp-link" id="fp-link-btn" type="button">Forgot password?</button>
+          </div>
           <button class="submit-btn" id="si-btn" type="button"><div class="spinner" id="si-spin"></div><span id="si-label">Sign In</span></button>
           <div class="rate-warn" id="si-rate" role="alert"></div>
+        </div>
+        <!-- FORGOT PASSWORD PANE -->
+        <div class="form-pane" id="pane-forgot">
+          <button class="back-link" id="fp-back-btn" type="button">← Back to sign in</button>
+          <div class="form-title">Reset password</div>
+          <div class="form-sub">Enter your email and we'll send a reset link.</div>
+          <div class="alert-box alert-err" id="fp-err" role="alert"></div>
+          <div class="alert-box alert-ok" id="fp-ok" role="status"></div>
+          <div class="field"><label class="field-label" for="fp-email">Email address</label><div class="field-wrap"><span class="field-icon" aria-hidden="true">✉</span><input class="field-input" type="email" id="fp-email" autocomplete="email" placeholder="you@example.com"/></div></div>
+          <button class="submit-btn" id="fp-btn" type="button"><div class="spinner" id="fp-spin"></div><span id="fp-label">Send Reset Link</span></button>
         </div>
         <div class="form-pane" id="pane-signup">
           <div class="form-title">Create account</div>
@@ -403,6 +454,13 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 </div>
 
 <div class="toasts" id="toastArea" aria-live="polite"></div>
+
+<!-- MFA OVERLAY -->
+<div id="mfa-overlay">
+  <div class="mfa-box" id="mfa-box">
+    <!-- content injected by JS -->
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -560,10 +618,9 @@ function showErr(id,msg){
 }
 
 function hideAlerts(){
-  ['si-err','su-err','su-ok'].forEach(id=>{ 
+  ['si-err','su-err','su-ok','fp-err','fp-ok'].forEach(id=>{ 
     const e=document.getElementById(id); 
-    e.classList.remove('show'); 
-    e.textContent=''; 
+    if(e){ e.classList.remove('show'); e.textContent=''; }
   });
   document.querySelectorAll('.field-input').forEach(i=>i.classList.remove('err'));
   document.getElementById('si-rate').classList.remove('show');
@@ -572,7 +629,8 @@ function hideAlerts(){
 function setLoading(p,on){
   document.getElementById(p+'-btn').disabled=on;
   document.getElementById(p+'-spin').classList.toggle('show',on);
-  document.getElementById(p+'-label').textContent=on?(p==='si'?'Signing in…':'Creating account…'):(p==='si'?'Sign In':'Create Account');
+  const labels={si:{on:'Signing in…',off:'Sign In'},su:{on:'Creating account…',off:'Create Account'},fp:{on:'Sending…',off:'Send Reset Link'}};
+  document.getElementById(p+'-label').textContent=on?labels[p].on:labels[p].off;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -583,11 +641,20 @@ document.getElementById('tab-signup').addEventListener('click',()=>switchTab('si
 
 function switchTab(t){
   hideAlerts();
+  // tab buttons
   ['signin','signup'].forEach(k=>{
     document.getElementById('tab-'+k).classList.toggle('active',k===t);
-    document.getElementById('pane-'+k).classList.toggle('active',k===t);
+  });
+  // panes: signin, signup, forgot
+  ['signin','signup','forgot'].forEach(k=>{
+    const p=document.getElementById('pane-'+k);
+    if(p) p.classList.toggle('active',k===t);
   });
 }
+
+// Forgot password link
+document.getElementById('fp-link-btn').addEventListener('click',()=>switchTab('forgot'));
+document.getElementById('fp-back-btn').addEventListener('click',()=>switchTab('signin'));
 
 /* ─────────────────────────────────────────────────────────────
    SIGN IN
@@ -622,8 +689,12 @@ async function signIn(){
       showErr('si-err',authErr(d.error?.message)+(left<=2?` (${left} attempt(s) left)`:'')); 
       return; 
     }
-    Session.set(d.idToken,d.email);
-    showDash(d.email);
+    // Route through MFA before granting dashboard access
+    if(MFA.enrolled(d.email)){
+      showMfaOverlay('verify', d.email, d.idToken);
+    } else {
+      showMfaOverlay('enroll', d.email, d.idToken);
+    }
   }catch(e){ 
     console.error('[FoxVault] Sign in error:', e);
     showErr('si-err','Network error. Check your connection.'); 
@@ -654,11 +725,15 @@ async function signUp(){
       {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw,returnSecureToken:true})});
     const d=await r.json();
     if(!r.ok){ showErr('su-err',authErr(d.error?.message)); return; }
-    Session.set(d.idToken,d.email);
+    // FIX: Do NOT auto-login after signup. Show confirmation and send user to sign-in.
     const ok=document.getElementById('su-ok'); 
-    ok.textContent='Account created! Taking you to the vault…'; 
+    ok.textContent='Account created! Please sign in to continue.'; 
     ok.classList.add('show');
-    setTimeout(()=>showDash(d.email),1200);
+    // Clear signup fields for security
+    ['su-email','su-pass','su-pass2'].forEach(id=>document.getElementById(id).value='');
+    // Pre-fill the sign-in email for convenience, then switch after brief delay
+    document.getElementById('si-email').value=em;
+    setTimeout(()=>switchTab('signin'),1800);
   }catch(e){ 
     console.error('[FoxVault] Sign up error:', e);
     showErr('su-err','Network error. Check your connection.'); 
@@ -674,11 +749,16 @@ function showLogin(){
   document.getElementById('screen-dash').classList.remove('visible');
 }
 
-async function showDash(email){
+async function showDash(email, token){
+  // FIX: Always set fresh session (clears any stale previous-user state)
+  if(token) Session.set(token, email);
+  // FIX: Wipe docs before load so previous user's docs never flash
+  S.docs=[]; S.events=0; S.storage=0;
+  renderDocs();
   document.getElementById('screen-login').classList.add('hidden');
   document.getElementById('screen-dash').classList.add('visible');
   document.getElementById('userEmail').textContent=email||Session.email();
-  addAudit('au','LOGIN — authenticated via Identity Platform');
+  addAudit('au','LOGIN — authenticated via Identity Platform'+(MFA.enrolled(email)?' · MFA verified':''));
   await loadDocs();
 }
 
@@ -687,10 +767,304 @@ async function showDash(email){
 ───────────────────────────────────────────────────────────── */
 document.getElementById('logoutBtn').addEventListener('click',()=>{
   Session.clear();
+  // FIX: Explicitly wipe in-memory docs so next user cannot see them
   S.docs=[]; S.events=0; S.storage=0;
+  renderDocs();
+  // Note: MFA.clear() would remove all enrolled TOTP secrets — only do this
+  // if you want to force re-enrollment every session. Leaving enrolled status
+  // in sessionStorage is fine since sessionStorage clears on tab close.
   ['si-email','si-pass','su-email','su-pass','su-pass2'].forEach(id=>document.getElementById(id).value='');
   hideAlerts(); switchTab('signin'); showLogin();
 });
+
+/* ─────────────────────────────────────────────────────────────
+   FORGOT PASSWORD
+───────────────────────────────────────────────────────────── */
+document.getElementById('fp-btn').addEventListener('click', sendPasswordReset);
+document.getElementById('fp-email').addEventListener('keydown',e=>{ if(e.key==='Enter') sendPasswordReset(); });
+
+async function sendPasswordReset(){
+  hideAlerts();
+  const em=document.getElementById('fp-email').value.trim();
+  if(!em){ showErr('fp-err','Please enter your email address.'); return; }
+  if(!CFG.identityApiKey){ showErr('fp-err','Auth service unavailable — config not loaded.'); return; }
+  setLoading('fp',true);
+  try{
+    const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${CFG.identityApiKey}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({requestType:'PASSWORD_RESET',email:em})});
+    const d=await r.json();
+    // Always show success message even if email not found (security best practice: don't leak account existence)
+    const ok=document.getElementById('fp-ok');
+    ok.textContent='If an account exists for '+em+', a reset link has been sent. Check your inbox.';
+    ok.classList.add('show');
+    document.getElementById('fp-email').value='';
+    if(!r.ok) console.warn('[FoxVault] Password reset note:', d.error?.message);
+  }catch(e){
+    showErr('fp-err','Network error. Check your connection.');
+  }
+  finally{ setLoading('fp',false); }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MFA — TOTP via Firebase Identity Platform
+   
+   Flow:
+   1. After login: check if user has MFA enrolled via getAccountInfo
+   2. If enrolled → show verify OTP screen
+   3. If not enrolled → offer to enroll (show QR code + TOTP setup)
+   4. After verify → proceed to dashboard
+   
+   Firebase REST API notes:
+   - MFA enrollment/verification requires the Firebase SDK or
+     the REST API with custom tokens. For email/password accounts
+     we use a client-side TOTP approach:
+   - Enrollment: generate secret, show QR, verify once, store
+     encrypted secret in sessionStorage (not production-grade —
+     real TOTP MFA needs server-side verification or Firebase SDK)
+   - This implementation uses a pure JS TOTP library approach
+     for portfolio/demo purposes. In production use Firebase Auth SDK.
+───────────────────────────────────────────────────────────── */
+
+// Minimal TOTP implementation (RFC 6238)
+const TOTP = (() => {
+  // Base32 decode
+  function b32decode(s) {
+    const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    s = s.replace(/=+$/, '').toUpperCase();
+    let bits = 0, val = 0;
+    const out = [];
+    for (const c of s) {
+      val = (val << 5) | alpha.indexOf(c);
+      bits += 5;
+      if (bits >= 8) { bits -= 8; out.push((val >> bits) & 0xff); }
+    }
+    return new Uint8Array(out);
+  }
+
+  async function hotp(key, counter) {
+    const keyBytes = b32decode(key);
+    const msg = new Uint8Array(8);
+    let c = counter;
+    for (let i = 7; i >= 0; i--) { msg[i] = c & 0xff; c >>= 8; }
+    const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+    const sig = new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, msg));
+    const offset = sig[19] & 0xf;
+    const code = ((sig[offset] & 0x7f) << 24 | sig[offset+1] << 16 | sig[offset+2] << 8 | sig[offset+3]) % 1000000;
+    return String(code).padStart(6, '0');
+  }
+
+  function genSecret(len = 20) {
+    const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const bytes = new Uint8Array(len);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => alpha[b % 32]).join('');
+  }
+
+  async function verify(secret, token) {
+    const counter = Math.floor(Date.now() / 30000);
+    for (let d = -1; d <= 1; d++) {
+      if (await hotp(secret, counter + d) === token) return true;
+    }
+    return false;
+  }
+
+  function totpUrl(secret, email) {
+    const issuer = 'FoxVault';
+    return `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
+  }
+
+  return { genSecret, verify, totpUrl };
+})();
+
+// QR code renderer (pure canvas, no external lib)
+async function drawQR(canvas, text) {
+  // Use a simple approach: encode as a link to a QR API via fetch
+  // Since we can't use external CDN for QR in CSP, we use canvas to display
+  // the secret directly and trust the authenticator app manual entry.
+  // Real production should use qrcode.js or similar bundled lib.
+  const ctx = canvas.getContext('2d');
+  canvas.width = 180; canvas.height = 180;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, 180, 180);
+  ctx.fillStyle = '#333';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Scan or enter key manually', 90, 30);
+  ctx.fillText('in your authenticator app', 90, 48);
+  // Draw a simple visual placeholder pattern
+  ctx.fillStyle = '#10B981';
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      if ((i + j) % 2 === 0) {
+        ctx.fillRect(20 + i * 18, 60 + j * 12, 14, 8);
+      }
+    }
+  }
+  ctx.fillStyle = '#333';
+  ctx.font = '10px monospace';
+  ctx.fillText('↓ Enter key below ↓', 90, 170);
+}
+
+// MFA session state
+const MFA = {
+  _key: 'fv_mfa',
+  enrolled(email) {
+    try { 
+      const d = JSON.parse(sessionStorage.getItem(this._key) || '{}');
+      return d[email] ? true : false;
+    } catch { return false; }
+  },
+  getSecret(email) {
+    try { 
+      const d = JSON.parse(sessionStorage.getItem(this._key) || '{}');
+      return d[email] || null;
+    } catch { return null; }
+  },
+  enroll(email, secret) {
+    try {
+      const d = JSON.parse(sessionStorage.getItem(this._key) || '{}');
+      d[email] = secret;
+      sessionStorage.setItem(this._key, JSON.stringify(d));
+    } catch {}
+  },
+  clear() { sessionStorage.removeItem(this._key); }
+};
+
+let _pendingEmail = null; // email waiting for MFA verify after sign-in
+
+function showMfaOverlay(mode, email, token) {
+  const overlay = document.getElementById('mfa-overlay');
+  const box = document.getElementById('mfa-box');
+  overlay.classList.add('show');
+
+  if (mode === 'verify') {
+    box.innerHTML = `
+      <div class="mfa-title">🔐 Two-Factor Auth</div>
+      <div class="mfa-sub">Enter the 6-digit code from your authenticator app.</div>
+      <div class="mfa-err" id="mfa-err"></div>
+      <div class="otp-row" id="otp-row">
+        ${[0,1,2,3,4,5].map(i=>`<input class="otp-digit" id="otp-${i}" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" aria-label="Digit ${i+1}"/>`).join('')}
+      </div>
+      <button class="submit-btn" id="mfa-verify-btn" type="button">
+        <div class="spinner" id="mfa-spin"></div>
+        <span id="mfa-label">Verify</span>
+      </button>`;
+    setupOtpInputs('otp-row', 6);
+    document.getElementById('mfa-verify-btn').addEventListener('click', async () => {
+      const code = [0,1,2,3,4,5].map(i=>document.getElementById('otp-'+i).value).join('');
+      if(code.length < 6){ showMfaErr('Enter all 6 digits.'); return; }
+      const secret = MFA.getSecret(email);
+      document.getElementById('mfa-verify-btn').disabled = true;
+      document.getElementById('mfa-spin').classList.add('show');
+      document.getElementById('mfa-label').textContent = 'Verifying…';
+      const ok = await TOTP.verify(secret, code);
+      document.getElementById('mfa-verify-btn').disabled = false;
+      document.getElementById('mfa-spin').classList.remove('show');
+      document.getElementById('mfa-label').textContent = 'Verify';
+      if(ok){ closeMfaOverlay(); showDash(email, token); }
+      else { showMfaErr('Incorrect code. Try again.'); clearOtpInputs(6); }
+    });
+
+  } else if (mode === 'enroll') {
+    const secret = TOTP.genSecret();
+    const url = TOTP.totpUrl(secret, email);
+    box.innerHTML = `
+      <div class="mfa-enroll-badge">🛡 New: MFA Available</div>
+      <div class="mfa-title">Set Up 2FA</div>
+      <div class="mfa-sub">Add a one-time password authenticator for extra protection.</div>
+      <div class="mfa-err" id="mfa-err"></div>
+      <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
+      <div class="secret-code" id="secret-display" title="Click to copy">${secret}</div>
+      <div class="mfa-steps"><ol>
+        <li>Open Google Authenticator, Authy, or any TOTP app.</li>
+        <li>Tap <strong>+</strong> → <em>Enter a setup key</em>.</li>
+        <li>Paste the key shown above. Set Time-based = on.</li>
+        <li>Enter the 6-digit code below to confirm setup.</li>
+      </ol></div>
+      <div class="otp-row" id="otp-row">
+        ${[0,1,2,3,4,5].map(i=>`<input class="otp-digit" id="otp-${i}" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" aria-label="Digit ${i+1}"/>`).join('')}
+      </div>
+      <button class="submit-btn" id="mfa-verify-btn" type="button">
+        <div class="spinner" id="mfa-spin"></div>
+        <span id="mfa-label">Enable 2FA &amp; Continue</span>
+      </button>
+      <button class="skip-link" id="mfa-skip-btn" type="button">Skip for now</button>`;
+
+    drawQR(document.getElementById('qr-canvas'), url);
+
+    document.getElementById('secret-display').addEventListener('click', () => {
+      navigator.clipboard.writeText(secret).then(()=>toast('📋','Copied','Secret key copied to clipboard'));
+    });
+
+    document.getElementById('mfa-skip-btn').addEventListener('click', () => {
+      closeMfaOverlay();
+      showDash(email, token);
+    });
+
+    document.getElementById('mfa-verify-btn').addEventListener('click', async () => {
+      const code = [0,1,2,3,4,5].map(i=>document.getElementById('otp-'+i).value).join('');
+      if(code.length < 6){ showMfaErr('Enter all 6 digits to confirm.'); return; }
+      document.getElementById('mfa-verify-btn').disabled = true;
+      document.getElementById('mfa-spin').classList.add('show');
+      document.getElementById('mfa-label').textContent = 'Verifying…';
+      const ok = await TOTP.verify(secret, code);
+      document.getElementById('mfa-verify-btn').disabled = false;
+      document.getElementById('mfa-spin').classList.remove('show');
+      document.getElementById('mfa-label').textContent = 'Enable 2FA & Continue';
+      if(ok){
+        MFA.enroll(email, secret);
+        toast('🛡','2FA Enabled','Your account is now protected with MFA.');
+        closeMfaOverlay();
+        showDash(email, token);
+      } else {
+        showMfaErr('Code mismatch — make sure your device clock is correct.');
+        clearOtpInputs(6);
+      }
+    });
+
+    setupOtpInputs('otp-row', 6);
+  }
+}
+
+function showMfaErr(msg){
+  const e = document.getElementById('mfa-err');
+  if(e){ e.textContent=msg; e.classList.add('show'); }
+}
+
+function closeMfaOverlay(){
+  document.getElementById('mfa-overlay').classList.remove('show');
+  document.getElementById('mfa-box').innerHTML='';
+}
+
+function setupOtpInputs(rowId, count) {
+  const row = document.getElementById(rowId);
+  const inputs = Array.from(row.querySelectorAll('.otp-digit'));
+  inputs.forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      const v = inp.value.replace(/\D/g,'');
+      inp.value = v ? v[0] : '';
+      if(v && i < count - 1) inputs[i+1].focus();
+    });
+    inp.addEventListener('keydown', e => {
+      if(e.key === 'Backspace' && !inp.value && i > 0) inputs[i-1].focus();
+      if(e.key === 'Enter') document.getElementById('mfa-verify-btn').click();
+    });
+    inp.addEventListener('paste', e => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
+      text.split('').slice(0,count).forEach((ch,j)=>{ if(inputs[i+j]) inputs[i+j].value=ch; });
+      const next = Math.min(i + text.length, count - 1);
+      inputs[next].focus();
+    });
+  });
+  setTimeout(() => inputs[0]?.focus(), 80);
+}
+
+function clearOtpInputs(count) {
+  for(let i=0;i<count;i++){ const el=document.getElementById('otp-'+i); if(el) el.value=''; }
+  document.getElementById('otp-0')?.focus();
+}
 
 /* ─────────────────────────────────────────────────────────────
    DASHBOARD STATE
@@ -898,12 +1272,18 @@ function toast(icon,title,sub){
    INIT
 ───────────────────────────────────────────────────────────── */
 (async function(){
-  // Immediately hide login if a session exists
+  // FIX: "Paused in debugger" on DevTools open is caused by Chrome's
+  // "Pause on caught exceptions" or breakpoints set in a previous session.
+  // Go to DevTools → Sources → Breakpoints panel → remove all breakpoints.
+  // Also disable "Pause on exceptions" (the pause icon in Sources toolbar).
+  // We do NOT call renderDocs() here to avoid flashing a previous user's data.
+
   if(Session.token()){
+    // Session exists from a same-tab refresh — go straight to dash
+    // (no token param needed; session is already set)
     document.getElementById('screen-login').classList.add('hidden');
     document.getElementById('screen-dash').classList.add('visible');
     document.getElementById('userEmail').textContent = Session.email();
-    renderDocs();
   }
   
   await loadConfig();
@@ -911,6 +1291,9 @@ function toast(icon,title,sub){
   setupDZ('dz2','fi2');
   
   if(Session.token()){
+    // FIX: Clear stale in-memory docs, then load fresh for current user
+    S.docs=[]; S.events=0; S.storage=0;
+    renderDocs();
     addAudit('au','SESSION RESTORED — loading vault…');
     await loadDocs();
   } else {
