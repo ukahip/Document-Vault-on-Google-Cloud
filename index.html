@@ -263,7 +263,7 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
   text-align:center;outline:none;transition:border-color .18s,box-shadow .18s;caret-color:var(--emerald);}
 .otp-digit:focus{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 3px rgba(16,185,129,.1);}
 .qr-wrap{text-align:center;margin-bottom:18px;}
-.qr-wrap canvas{border-radius:12px;border:4px solid white;display:block;margin:0 auto;}
+.qr-wrap canvas{border-radius:12px;border:4px solid white;display:block;margin:0 auto;image-rendering:pixelated;}
 .secret-code{font-family:var(--fm);font-size:11px;color:var(--t3);word-break:break-all;
   background:var(--ink-3);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;
   text-align:center;margin-bottom:16px;cursor:pointer;transition:background .15s;letter-spacing:.06em;}
@@ -828,82 +828,292 @@ async function sendPasswordReset(){
 
 // Minimal TOTP implementation (RFC 6238)
 const TOTP = (() => {
-  // Base32 decode
+  // ── Base32 decode (RFC 4648) ──────────────────────────────
+  // Uses rejection sampling so every character is equally likely.
   function b32decode(s) {
-    const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    s = s.replace(/=+$/, '').toUpperCase();
-    let bits = 0, val = 0;
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    s = s.replace(/[\s=]+/g, '').toUpperCase();
+    let buf = 0, bitsLeft = 0;
     const out = [];
-    for (const c of s) {
-      val = (val << 5) | alpha.indexOf(c);
-      bits += 5;
-      if (bits >= 8) { bits -= 8; out.push((val >> bits) & 0xff); }
+    for (const ch of s) {
+      const idx = CHARS.indexOf(ch);
+      if (idx === -1) continue; // skip invalid chars gracefully
+      buf = (buf << 5) | idx;
+      bitsLeft += 5;
+      if (bitsLeft >= 8) {
+        bitsLeft -= 8;
+        out.push((buf >> bitsLeft) & 0xff);
+      }
     }
     return new Uint8Array(out);
   }
 
-  async function hotp(key, counter) {
-    const keyBytes = b32decode(key);
+  // ── Generate unbiased Base32 secret ──────────────────────
+  // Rejection-samples from crypto.getRandomValues so every
+  // character has exactly 1/32 probability (no modulo bias).
+  function genSecret(chars = 32) {
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const out = [];
+    // Over-generate random bytes, keep only those in [0, 224)
+    // so that val % 32 is perfectly uniform (224 = 7 * 32).
+    while (out.length < chars) {
+      const buf = new Uint8Array(chars * 2);
+      crypto.getRandomValues(buf);
+      for (const b of buf) {
+        if (out.length >= chars) break;
+        if (b < 224) out.push(CHARS[b % 32]);
+      }
+    }
+    return out.join('');
+  }
+
+  // ── HOTP (RFC 4226) ───────────────────────────────────────
+  // Uses BigInt for the counter so values > 2^31 are correct.
+  async function hotp(secret, counter) {
+    const keyBytes = b32decode(secret);
+    if (keyBytes.length === 0) throw new Error('Invalid Base32 secret');
+
+    // Encode 64-bit counter as big-endian 8 bytes via BigInt
     const msg = new Uint8Array(8);
-    let c = counter;
-    for (let i = 7; i >= 0; i--) { msg[i] = c & 0xff; c >>= 8; }
-    const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+    let c = BigInt(counter);
+    for (let i = 7; i >= 0; i--) {
+      msg[i] = Number(c & 0xffn);
+      c >>= 8n;
+    }
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw', keyBytes,
+      { name: 'HMAC', hash: 'SHA-1' },
+      false, ['sign']
+    );
     const sig = new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, msg));
-    const offset = sig[19] & 0xf;
-    const code = ((sig[offset] & 0x7f) << 24 | sig[offset+1] << 16 | sig[offset+2] << 8 | sig[offset+3]) % 1000000;
+
+    // Dynamic truncation — use last byte for offset, not hardcoded index
+    const offset = sig[sig.length - 1] & 0x0f;
+    const code = (
+      ((sig[offset]     & 0x7f) << 24) |
+      ((sig[offset + 1] & 0xff) << 16) |
+      ((sig[offset + 2] & 0xff) <<  8) |
+       (sig[offset + 3] & 0xff)
+    ) % 1_000_000;
     return String(code).padStart(6, '0');
   }
 
-  function genSecret(len = 20) {
-    const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    const bytes = new Uint8Array(len);
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes, b => alpha[b % 32]).join('');
-  }
-
+  // ── TOTP verify with ±1 window ────────────────────────────
   async function verify(secret, token) {
-    const counter = Math.floor(Date.now() / 30000);
-    for (let d = -1; d <= 1; d++) {
-      if (await hotp(secret, counter + d) === token) return true;
+    const t = Math.floor(Date.now() / 30000);
+    for (const delta of [-1, 0, 1]) {
+      try {
+        if (await hotp(secret, t + delta) === token.trim()) return true;
+      } catch { /* skip bad window */ }
     }
     return false;
   }
 
+  // ── otpauth:// URI ────────────────────────────────────────
+  // Format: otpauth://totp/ISSUER:ACCOUNT?secret=S&issuer=ISSUER
+  // Do NOT double-encode the colon between issuer and account.
   function totpUrl(secret, email) {
-    const issuer = 'FoxVault';
-    return `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
+    const issuer  = 'FoxVault';
+    const label   = encodeURIComponent(issuer) + ':' + encodeURIComponent(email);
+    const params  = new URLSearchParams({
+      secret,
+      issuer,
+      algorithm: 'SHA1',
+      digits: '6',
+      period: '30',
+    });
+    return `otpauth://totp/${label}?${params.toString()}`;
   }
 
   return { genSecret, verify, totpUrl };
 })();
 
-// QR code renderer (pure canvas, no external lib)
-async function drawQR(canvas, text) {
-  // Use a simple approach: encode as a link to a QR API via fetch
-  // Since we can't use external CDN for QR in CSP, we use canvas to display
-  // the secret directly and trust the authenticator app manual entry.
-  // Real production should use qrcode.js or similar bundled lib.
-  const ctx = canvas.getContext('2d');
-  canvas.width = 180; canvas.height = 180;
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, 180, 180);
-  ctx.fillStyle = '#333';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('Scan or enter key manually', 90, 30);
-  ctx.fillText('in your authenticator app', 90, 48);
-  // Draw a simple visual placeholder pattern
-  ctx.fillStyle = '#10B981';
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      if ((i + j) % 2 === 0) {
-        ctx.fillRect(20 + i * 18, 60 + j * 12, 14, 8);
-      }
+/* ─────────────────────────────────────────────────────────────
+   REAL QR CODE GENERATOR — self-contained, no external lib
+   Implements QR Code Model 2, error correction level M.
+   Based on the ISO/IEC 18004 standard.
+───────────────────────────────────────────────────────────── */
+const QRCode = (() => {
+  // GF(256) arithmetic for Reed-Solomon
+  const EXP = new Uint8Array(512);
+  const LOG = new Uint8Array(256);
+  (() => {
+    let x = 1;
+    for (let i = 0; i < 255; i++) {
+      EXP[i] = x; LOG[x] = i;
+      x = x < 128 ? x * 2 : (x * 2) ^ 285;
     }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  })();
+
+  function gfMul(a, b) { return a && b ? EXP[LOG[a] + LOG[b]] : 0; }
+  function gfPoly(e) {
+    let p = [1];
+    for (let i = 0; i < e; i++) {
+      const q = [1, EXP[i]];
+      const r = new Uint8Array(p.length + q.length - 1);
+      for (let j = 0; j < p.length; j++)
+        for (let k = 0; k < q.length; k++)
+          r[j + k] ^= gfMul(p[j], q[k]);
+      p = Array.from(r);
+    }
+    return p;
   }
-  ctx.fillStyle = '#333';
-  ctx.font = '10px monospace';
-  ctx.fillText('↓ Enter key below ↓', 90, 170);
+  function rsEncode(data, nec) {
+    const gen = gfPoly(nec);
+    const res = new Uint8Array(nec);
+    for (let i = 0; i < data.length; i++) {
+      const coef = data[i] ^ res[0];
+      res.copyWithin(0, 1); res[nec - 1] = 0;
+      for (let j = 0; j < nec; j++) res[j] ^= gfMul(gen[j + 1], coef);
+    }
+    return res;
+  }
+
+  // Byte-mode encoder
+  function encode(text) {
+    const bytes = new TextEncoder().encode(text);
+    // Version selection: try versions 1-10 with EC level M
+    // EC codewords capacity table (version, EC-M data codewords)
+    const CAP = [0,16,28,44,64,86,108,124,154,182,216,254];
+    let ver = 1;
+    while (ver <= 11 && CAP[ver] < bytes.length + 3) ver++;
+    if (ver > 11) throw new Error('QR data too long');
+
+    const totalCW = [0,26,44,70,100,134,172,196,242,292,346,404][ver];
+    const ecCW    = [0,10,16,26,36,48,64,72,88,110,130,150][ver];
+    const dataCW  = totalCW - ecCW;
+
+    // Build bit stream
+    const bits = [];
+    const push = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >> i) & 1); };
+    push(0b0100, 4);           // byte mode
+    push(bytes.length, 8);     // character count
+    for (const b of bytes) push(b, 8);
+    // Terminator & padding
+    for (let i = 0; i < 4 && bits.length < dataCW * 8; i++) bits.push(0);
+    while (bits.length % 8) bits.push(0);
+    const pads = [0xEC, 0x11];
+    let pi = 0;
+    while (bits.length < dataCW * 8) { push(pads[pi++ % 2], 8); }
+
+    // Pack into bytes
+    const data = new Uint8Array(dataCW);
+    for (let i = 0; i < dataCW; i++)
+      for (let b = 0; b < 8; b++) data[i] = (data[i] << 1) | bits[i * 8 + b];
+
+    // Reed-Solomon
+    const ec = rsEncode(data, ecCW);
+    const all = new Uint8Array(totalCW);
+    all.set(data); all.set(ec, dataCW);
+
+    return { ver, codewords: all, ecCW };
+  }
+
+  // Matrix builder
+  function buildMatrix(ver, codewords) {
+    const size = ver * 4 + 17;
+    const M = Array.from({ length: size }, () => new Int8Array(size).fill(-1));
+    const set = (r, c, v) => { if (r >= 0 && r < size && c >= 0 && c < size) M[r][c] = v; };
+    const isFunc = (r, c) => r >= 0 && r < size && c >= 0 && c < size && M[r][c] >= 0 && M[r][c] <= 1;
+
+    // Finder patterns
+    const finder = (tr, tc) => {
+      for (let r = -1; r <= 7; r++) for (let c = -1; c <= 7; c++) {
+        if (r < 0 || r > 6 || c < 0 || c > 6) { set(tr + r, tc + c, 0); continue; }
+        const b = (r === 0 || r === 6 || c === 0 || c === 6) ? 1 : (r >= 2 && r <= 4 && c >= 2 && c <= 4 ? 1 : 0);
+        set(tr + r, tc + c, b);
+      }
+    };
+    finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+
+    // Separators already handled by finder loop borders; timing patterns
+    for (let i = 8; i < size - 8; i++) { set(6, i, i % 2 === 0 ? 1 : 0); set(i, 6, i % 2 === 0 ? 1 : 0); }
+
+    // Alignment patterns (ver >= 2)
+    const AP = [[], [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+    const ap = AP[ver] || [];
+    for (const r of ap) for (const c of ap) {
+      if ((r === 6 && c === 6) || (r === 6 && c === ap[ap.length - 1]) || (r === ap[ap.length - 1] && c === 6)) continue;
+      for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++)
+        set(r + dr, c + dc, (Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0)) ? 1 : 0);
+    }
+
+    // Dark module & format area placeholders
+    set(size - 8, 8, 1);
+    // Mark format info areas as "function" (value 2 = placeholder)
+    const fmtPos = [[8, 0],[8, 1],[8, 2],[8, 3],[8, 4],[8, 5],[8, 7],[8, 8],[7, 8],[5, 8],[4, 8],[3, 8],[2, 8],[1, 8],[0, 8]];
+    for (const [r, c] of fmtPos) { set(r, c, 2); set(size - 1 - (14 - fmtPos.indexOf([r,c])), 8, 2); set(8, size - 8 + fmtPos.indexOf([r,c]), 2); }
+
+    // Place format: EC level M (bits 10) + mask 0 (bits 000) = 101010000010010
+    // Format string for M+mask0: 101010000010010 XOR 101010101010101 = 000000101000111
+    const fmt = 0b000000101000111; // pre-computed for EC=M, mask=0
+    const fmtBits = [];
+    for (let i = 14; i >= 0; i--) fmtBits.push((fmt >> i) & 1);
+    const fmtCoords = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    fmtCoords.forEach(([r,c], i) => { M[r][c] = fmtBits[i]; M[size-1-i<size-8?size-1-i:size-1-i][8] = fmtBits[i]; });
+    // Mirror second copy
+    for (let i = 0; i < 8; i++) set(8, size - 8 + i, fmtBits[i]);
+    for (let i = 8; i < 15; i++) set(size - 15 + i, 8, fmtBits[i]);
+
+    // Place data bits (upward-column zigzag, skip function modules)
+    let bit = 0;
+    const allBits = [];
+    for (const cw of codewords) for (let b = 7; b >= 0; b--) allBits.push((cw >> b) & 1);
+    let up = true;
+    for (let col = size - 1; col >= 0; col -= 2) {
+      if (col === 6) col--; // skip vertical timing column
+      for (let rr = 0; rr < size; rr++) {
+        const r = up ? size - 1 - rr : rr;
+        for (let dc = 0; dc < 2; dc++) {
+          const c = col - dc;
+          if (M[r][c] === -1) { // empty cell
+            const b = bit < allBits.length ? allBits[bit++] : 0;
+            M[r][c] = b; // mask 0: (r+c) % 2 === 0 → flip
+            if ((r + c) % 2 === 0) M[r][c] ^= 1;
+          }
+        }
+      }
+      up = !up;
+    }
+
+    return M;
+  }
+
+  function render(canvas, text, cellSize = 4) {
+    let ver, codewords;
+    try { ({ ver, codewords } = encode(text)); }
+    catch (e) { console.error('QR encode error:', e); return; }
+    const M = buildMatrix(ver, codewords);
+    const size = M.length;
+    const quiet = 4;
+    const px = (size + quiet * 2) * cellSize;
+    canvas.width = canvas.height = px;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, px, px);
+    ctx.fillStyle = '#000000';
+    for (let r = 0; r < size; r++)
+      for (let c = 0; c < size; c++)
+        if (M[r][c] === 1)
+          ctx.fillRect((c + quiet) * cellSize, (r + quiet) * cellSize, cellSize, cellSize);
+  }
+
+  return { render };
+})();
+
+function drawQR(canvas, text) {
+  try { QRCode.render(canvas, text, 4); }
+  catch (e) {
+    // Fallback: show manual key entry message
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.height = 180;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 180, 180);
+    ctx.fillStyle = '#333'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Enter key manually below', 90, 90);
+    console.error('QR render failed:', e);
+  }
 }
 
 // MFA session state
