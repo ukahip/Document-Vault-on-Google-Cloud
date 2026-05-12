@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>FoxVault — Secure Document Vault</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Figtree:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<!-- Firebase for MFA support -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -97,6 +100,8 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 .alert-ok{background:var(--em-d);border:1px solid rgba(16,185,129,.25);color:#6EE7B7;}
 .rate-warn{font-family:var(--fm);font-size:11px;color:var(--rose);margin-top:10px;text-align:center;display:none;}
 .rate-warn.show{display:block;}
+.fp-link{font-size:13px;color:var(--t3);text-decoration:none;transition:color .15s;display:block;text-align:center;margin-top:14px;}
+.fp-link:hover{color:var(--emerald);}
 
 /* ══ DASHBOARD ══ */
 #screen-dash{display:none;height:100vh;width:100%;}
@@ -234,48 +239,17 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
 .stack-role{font-size:13px;color:var(--t3);margin-bottom:14px;line-height:1.65;}
 .stack-tag{font-family:var(--fm);font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid;display:inline-block;}
 
-.modal{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r-xl);
-  padding:32px 36px;max-width:450px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.7);}
-
-/* ── FORGOT PASSWORD pane ── */
-.fp-link{font-size:13px;color:var(--t3);cursor:pointer;text-align:right;display:block;
-  margin-top:8px;transition:color .15s;background:none;border:none;font-family:var(--fb);}
-.fp-link:hover{color:var(--emerald);}
-.back-link{font-size:13px;color:var(--t3);cursor:pointer;display:inline-flex;align-items:center;
-  gap:5px;margin-bottom:20px;transition:color .15s;background:none;border:none;font-family:var(--fb);}
-.back-link:hover{color:var(--emerald);}
-
-/* ── MFA overlay ── */
-#mfa-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
-  display:none;align-items:center;justify-content:center;}
-#mfa-overlay.show{display:flex;animation:fadeIn .2s ease;}
-.mfa-box{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r-xl);
-  padding:36px 38px;max-width:420px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.7);
-  animation:modalPop .25s cubic-bezier(.34,1.56,.64,1);}
-.mfa-title{font-family:var(--fh);font-size:21px;font-weight:800;margin-bottom:6px;}
-.mfa-sub{font-size:14px;color:var(--t3);margin-bottom:22px;line-height:1.6;}
-.mfa-err{border-radius:8px;padding:10px 13px;font-size:13px;margin-bottom:16px;
-  display:none;background:var(--rose-d);border:1px solid rgba(244,63,94,.25);color:#FDA4AF;}
-.mfa-err.show{display:block;}
-.otp-row{display:flex;gap:8px;justify-content:center;margin-bottom:22px;}
-.otp-digit{width:46px;height:54px;background:var(--ink-3);border:1px solid var(--bd2);
-  border-radius:10px;font-family:var(--fm);font-size:22px;font-weight:700;color:var(--t1);
-  text-align:center;outline:none;transition:border-color .18s,box-shadow .18s;caret-color:var(--emerald);}
-.otp-digit:focus{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 3px rgba(16,185,129,.1);}
-.qr-wrap{text-align:center;margin-bottom:18px;}
-.qr-wrap canvas{border-radius:12px;border:4px solid white;display:block;margin:0 auto;image-rendering:pixelated;}
-.secret-code{font-family:var(--fm);font-size:11px;color:var(--t3);word-break:break-all;
-  background:var(--ink-3);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;
-  text-align:center;margin-bottom:16px;cursor:pointer;transition:background .15s;letter-spacing:.06em;}
-.secret-code:hover{background:var(--ink-4);}
-.mfa-steps{font-size:13px;color:var(--t2);margin-bottom:18px;line-height:1.75;}
-.mfa-steps ol{padding-left:18px;}
-.mfa-enroll-badge{display:inline-flex;align-items:center;gap:6px;background:var(--em-d);
-  border:1px solid rgba(16,185,129,.2);border-radius:20px;padding:4px 12px;
-  font-family:var(--fm);font-size:11px;color:var(--emerald);margin-bottom:16px;}
-.skip-link{font-size:13px;color:var(--t3);cursor:pointer;text-align:center;display:block;
-  margin-top:10px;transition:color .15s;background:none;border:none;font-family:var(--fb);width:100%;}
-.skip-link:hover{color:var(--t2);}
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r-xl);padding:32px 36px;max-width:450px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.7);animation:modalPop .25s cubic-bezier(.34,1.56,.64,1);}
+.modal-title{font-family:var(--fh);font-size:20px;font-weight:800;margin-bottom:6px;}
+.modal-sub{font-size:14px;color:var(--t3);margin-bottom:24px;line-height:1.6;}
+.modal-actions{display:flex;gap:10px;margin-top:24px;}
+.modal-btn{flex:1;padding:12px;border-radius:10px;border:none;font-family:var(--fb);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
+.modal-btn.primary{background:linear-gradient(135deg,#059669,var(--emerald));color:#fff;}
+.modal-btn.secondary{background:var(--ink-3);color:var(--t2);border:1px solid var(--bd);}
+.recaptcha-container{margin:14px 0;}
 
 .toasts{position:fixed;top:18px;right:18px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
 .toast{background:var(--ink-2);border:1px solid var(--bd2);border-radius:var(--r);
@@ -338,21 +312,10 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
           <div class="form-sub">Sign in to access your encrypted vault.</div>
           <div class="alert-box alert-err" id="si-err" role="alert"></div>
           <div class="field"><label class="field-label" for="si-email">Email address</label><div class="field-wrap"><span class="field-icon" aria-hidden="true">✉</span><input class="field-input" type="email" id="si-email" autocomplete="email" placeholder="you@example.com"/></div></div>
-          <div class="field"><label class="field-label" for="si-pass">Password</label><div class="field-wrap"><span class="field-icon" aria-hidden="true">🔒</span><input class="field-input" type="password" id="si-pass" autocomplete="current-password" placeholder="Your password"/></div>
-            <button class="fp-link" id="fp-link-btn" type="button">Forgot password?</button>
-          </div>
+          <div class="field"><label class="field-label" for="si-pass">Password</label><div class="field-wrap"><span class="field-icon" aria-hidden="true">🔒</span><input class="field-input" type="password" id="si-pass" autocomplete="current-password" placeholder="Your password"/></div></div>
           <button class="submit-btn" id="si-btn" type="button"><div class="spinner" id="si-spin"></div><span id="si-label">Sign In</span></button>
+          <a href="#" class="fp-link" id="fp-link">Forgot password?</a>
           <div class="rate-warn" id="si-rate" role="alert"></div>
-        </div>
-        <!-- FORGOT PASSWORD PANE -->
-        <div class="form-pane" id="pane-forgot">
-          <button class="back-link" id="fp-back-btn" type="button">← Back to sign in</button>
-          <div class="form-title">Reset password</div>
-          <div class="form-sub">Enter your email and we'll send a reset link.</div>
-          <div class="alert-box alert-err" id="fp-err" role="alert"></div>
-          <div class="alert-box alert-ok" id="fp-ok" role="status"></div>
-          <div class="field"><label class="field-label" for="fp-email">Email address</label><div class="field-wrap"><span class="field-icon" aria-hidden="true">✉</span><input class="field-input" type="email" id="fp-email" autocomplete="email" placeholder="you@example.com"/></div></div>
-          <button class="submit-btn" id="fp-btn" type="button"><div class="spinner" id="fp-spin"></div><span id="fp-label">Send Reset Link</span></button>
         </div>
         <div class="form-pane" id="pane-signup">
           <div class="form-title">Create account</div>
@@ -379,6 +342,7 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
       <div class="nav-item" data-page="documents"><span class="nav-icon">📂</span><span>Documents</span><span class="nav-badge" id="navBadge">0</span></div>
       <div class="nav-item" data-page="upload"><span class="nav-icon">⬆️</span><span>Upload</span></div>
       <div class="nav-label">Security</div>
+      <div class="nav-item" data-page="security"><span class="nav-icon">🛡️</span><span>Security</span></div>
       <div class="nav-item" data-page="audit"><span class="nav-icon">📋</span><span>Audit Log</span></div>
       <div class="nav-item" data-page="infra"><span class="nav-icon">☁️</span><span>Infrastructure</span></div>
     </nav>
@@ -419,6 +383,39 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
         <div class="upload-zone" id="dz2" role="button" tabindex="0" aria-label="Upload PDF document" style="margin-bottom:0"><div class="upload-icon">📄</div><div class="upload-title">Select or drop your PDF document</div><div class="upload-sub">Max 50 MB · PDF only · Encrypted instantly on upload</div><div class="chips"><span class="chip chip-g">🔐 CMEK Encrypted</span><span class="chip chip-b">📋 Audit Logged</span><span class="chip chip-y">🔒 7-Year Retention</span></div></div>
         <input type="file" id="fi2" accept=".pdf" style="display:none"/>
       </section>
+      <!-- SECURITY / MFA PAGE -->
+      <section class="page" id="pg-security">
+        <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title"><div class="sec-icon">🛡</div>MULTI-FACTOR AUTHENTICATION</div></div>
+        <div class="stack-card" style="max-width:600px;">
+          <div class="stack-name" style="margin-bottom:12px;">Phone Number (SMS)</div>
+          <div class="stack-role" style="margin-bottom:18px;">Add an extra layer of security by requiring a verification code from your phone when signing in.</div>
+          <div id="mfa-status" style="margin-bottom:18px;font-family:var(--fm);font-size:13px;color:var(--t3);">Checking status…</div>
+          <div id="mfa-enroll-section" style="display:none;">
+            <div class="field" style="margin-bottom:14px;">
+              <label class="field-label">Phone Number</label>
+              <div class="field-wrap">
+                <span class="field-icon" aria-hidden="true">📱</span>
+                <input class="field-input" type="tel" id="mfa-phone" placeholder="+1 234 567 8900"/>
+              </div>
+            </div>
+            <div id="mfa-enroll-recaptcha" class="recaptcha-container"></div>
+            <button class="submit-btn" id="mfa-enroll-btn" type="button" style="max-width:200px;">Enable MFA</button>
+          </div>
+          <div id="mfa-verify-enroll-section" style="display:none;margin-top:16px;">
+            <div class="field" style="margin-bottom:14px;">
+              <label class="field-label">Verification Code</label>
+              <div class="field-wrap">
+                <span class="field-icon" aria-hidden="true">🔢</span>
+                <input class="field-input" type="text" id="mfa-enroll-code" maxlength="6" placeholder="000000" inputmode="numeric"/>
+              </div>
+            </div>
+            <button class="submit-btn" id="mfa-confirm-btn" type="button" style="max-width:200px;">Confirm</button>
+          </div>
+          <div id="mfa-disable-section" style="display:none;">
+            <button class="logout-btn" id="mfa-disable-btn" type="button" style="color:var(--rose);background:var(--rose-d);border-radius:10px;padding:12px 16px;">Disable MFA</button>
+          </div>
+        </div>
+      </section>
       <!-- AUDIT PAGE -->
       <section class="page" id="pg-audit">
         <div class="sec-hd" style="margin-bottom:18px"><div class="sec-title"><div class="sec-icon">📋</div>AUDIT LOG</div><button class="sec-link" id="clearAuditBtn">Clear display</button></div>
@@ -433,7 +430,7 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
           <div class="stack-card" style="--sc:var(--sky)"><div class="stack-icon">☁</div><div class="stack-name">Cloud Storage</div><div class="stack-role">Durable encrypted PDF storage. Uniform IAM, 7-year retention, versioning, zero public access.</div><span class="stack-tag" style="color:var(--sky);background:var(--sky-d);border-color:rgba(56,189,248,.2)">CMEK · Uniform IAM</span></div>
           <div class="stack-card" style="--sc:var(--amber)"><div class="stack-icon">🔑</div><div class="stack-name">Cloud KMS</div><div class="stack-role">Customer-managed AES-256 encryption. 365-day auto-rotation, per-key service account binding.</div><span class="stack-tag" style="color:var(--amber);background:var(--amb-d);border-color:rgba(245,158,11,.2)">AES-256-GCM</span></div>
           <div class="stack-card" style="--sc:var(--violet)"><div class="stack-icon">🌐</div><div class="stack-name">Cloud API Gateway</div><div class="stack-role">Managed HTTPS entry with JWT validation. All three function endpoints secured behind the gateway.</div><span class="stack-tag" style="color:var(--violet);background:var(--vio-d);border-color:rgba(139,92,246,.2)">JWT Auth</span></div>
-          <div class="stack-card" style="--sc:var(--rose)"><div class="stack-icon">🔒</div><div class="stack-name">Identity Platform</div><div class="stack-role">Firebase-compatible email/password auth. Issues JWTs for all protected API Gateway routes.</div><span class="stack-tag" style="color:var(--rose);background:var(--rose-d);border-color:rgba(244,63,94,.2)">Email / Password</span></div>
+          <div class="stack-card" style="--sc:var(--rose)"><div class="stack-icon">🔒</div><div class="stack-name">Identity Platform</div><div class="stack-role">Firebase-compatible email/password auth. Issues JWTs for all protected API Gateway routes.</div><span class="stack-tag" style="color:var(--rose);background:var(--rose-d);border-color:rgba(244,63,94,.2)">Email / Password · MFA</span></div>
           <div class="stack-card" style="--sc:var(--emerald)"><div class="stack-icon">📋</div><div class="stack-name">Cloud Audit Logs</div><div class="stack-role">Data Read and Write on Cloud Storage and KMS. Every access and decryption logged automatically.</div><span class="stack-tag" style="color:var(--emerald);background:var(--em-d);border-color:rgba(16,185,129,.2)">Data R/W Enabled</span></div>
           <div class="stack-card" style="--sc:var(--sky)"><div class="stack-icon">📊</div><div class="stack-name">BigQuery</div><div class="stack-role">Long-term compliance archive via Log Router sink. Queryable 7-year audit trail.</div><span class="stack-tag" style="color:var(--sky);background:var(--sky-d);border-color:rgba(56,189,248,.2)">Log Sink</span></div>
           <div class="stack-card" style="--sc:var(--amber)"><div class="stack-icon">📡</div><div class="stack-name">Pub/Sub</div><div class="stack-role">Security alerting bus. Unauthorized access attempts trigger alerts via Cloud Monitoring.</div><span class="stack-tag" style="color:var(--amber);background:var(--amb-d);border-color:rgba(245,158,11,.2)">Security Alerts</span></div>
@@ -447,23 +444,71 @@ html,body{height:100%;font-family:var(--fb);background:var(--ink);color:var(--t1
       <button class="bnav-btn active" data-page="dashboard"><span class="bnav-icon">🏠</span><span class="bnav-label">Home</span></button>
       <button class="bnav-btn" data-page="documents"><span class="bnav-icon">📂</span><span class="bnav-label">Docs</span></button>
       <button class="bnav-btn" data-page="upload"><span class="bnav-icon">⬆️</span><span class="bnav-label">Upload</span></button>
+      <button class="bnav-btn" data-page="security"><span class="bnav-icon">🛡️</span><span class="bnav-label">Security</span></button>
       <button class="bnav-btn" data-page="audit"><span class="bnav-icon">📋</span><span class="bnav-label">Audit</span></button>
       <button class="bnav-btn" data-page="infra"><span class="bnav-icon">☁️</span><span class="bnav-label">Stack</span></button>
     </div>
   </nav>
 </div>
 
-<div class="toasts" id="toastArea" aria-live="polite"></div>
-
-<!-- MFA OVERLAY -->
-<div id="mfa-overlay">
-  <div class="mfa-box" id="mfa-box">
-    <!-- content injected by JS -->
+<!-- FORGOT PASSWORD MODAL -->
+<div class="modal-overlay" id="fpModal">
+  <div class="modal">
+    <div class="modal-title">Reset Password</div>
+    <div class="modal-sub">Enter your email and we'll send you a reset link.</div>
+    <div class="alert-box alert-err" id="fp-err" role="alert"></div>
+    <div class="alert-box alert-ok" id="fp-ok" role="status"></div>
+    <div class="field">
+      <label class="field-label" for="fp-email">Email address</label>
+      <div class="field-wrap">
+        <span class="field-icon" aria-hidden="true">✉</span>
+        <input class="field-input" type="email" id="fp-email" placeholder="you@example.com"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="fp-cancel" type="button">Cancel</button>
+      <button class="modal-btn primary" id="fp-submit" type="button">Send Reset Link</button>
+    </div>
   </div>
 </div>
 
+<!-- MFA VERIFICATION MODAL (at login) -->
+<div class="modal-overlay" id="mfaModal">
+  <div class="modal">
+    <div class="modal-title">Two-Factor Authentication</div>
+    <div class="modal-sub">Enter the 6-digit code sent to your phone.</div>
+    <div class="alert-box alert-err" id="mfa-err" role="alert"></div>
+    <div class="field">
+      <label class="field-label" for="mfa-code">Verification Code</label>
+      <div class="field-wrap">
+        <span class="field-icon" aria-hidden="true">🔢</span>
+        <input class="field-input" type="text" id="mfa-code" maxlength="6" placeholder="000000" inputmode="numeric"/>
+      </div>
+    </div>
+    <div id="mfa-recaptcha" class="recaptcha-container"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="mfa-cancel" type="button">Cancel</button>
+      <button class="modal-btn primary" id="mfa-verify" type="button">Verify</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toastArea" aria-live="polite"></div>
+
 <script>
 'use strict';
+
+/* ─────────────────────────────────────────────────────────────
+   GLOBAL ERROR HANDLERS  — prevents DevTools "pause on exceptions"
+───────────────────────────────────────────────────────────── */
+window.addEventListener('error', e => {
+  console.error('[FoxVault] Global error:', e.error);
+  e.preventDefault();
+});
+window.addEventListener('unhandledrejection', e => {
+  console.error('[FoxVault] Unhandled rejection:', e.reason);
+  e.preventDefault();
+});
 
 /* ─────────────────────────────────────────────────────────────
    CONFIG  — loaded from /api/config (Vercel serverless fn)
@@ -485,6 +530,30 @@ async function loadConfig(){
     }
   }catch(e){ 
     console.error('[FoxVault] Config error:', e.message); 
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FIREBASE  — initialized after config loads
+───────────────────────────────────────────────────────────── */
+let firebaseApp = null;
+let firebaseAuth = null;
+let mfaResolver = null;
+let mfaVerificationId = null;
+
+async function initFirebase(){
+  if(!CFG.identityApiKey) return;
+  try {
+    firebaseApp = firebase.initializeApp({
+      apiKey: CFG.identityApiKey,
+      authDomain: 'vault-project-492518.firebaseapp.com',
+      projectId: 'vault-project-492518'
+    });
+    firebaseAuth = firebase.auth();
+    await firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    console.log('[FoxVault] Firebase initialized');
+  } catch(e) {
+    console.error('[FoxVault] Firebase init failed:', e);
   }
 }
 
@@ -528,14 +597,13 @@ function esc(s){
 }
 
 /* ─────────────────────────────────────────────────────────────
-   API HELPER  — Fixed for CORS and better error handling
+   API HELPER
 ───────────────────────────────────────────────────────────── */
 async function apiReq(method, path, body){
   if(!CFG.gatewayUrl){
     throw new Error('Gateway URL not configured - check Vercel environment variables');
   }
   
-  // Ensure no trailing slash on gateway URL and leading slash on path
   const baseUrl = CFG.gatewayUrl.replace(/\/$/, '');
   const url = baseUrl + (path.startsWith('/') ? path : '/' + path);
   
@@ -547,7 +615,7 @@ async function apiReq(method, path, body){
       'Authorization': 'Bearer ' + Session.token()
     },
     mode: 'cors',
-    credentials: 'omit' // Don't send cookies - we use JWT
+    credentials: 'omit'
   };
   
   if(body instanceof File || body instanceof Blob){
@@ -555,7 +623,6 @@ async function apiReq(method, path, body){
     opts.body = body;
   } else if(body instanceof FormData){
     opts.body = body;
-    // Let browser set Content-Type with boundary for FormData
     delete opts.headers['Content-Type'];
   } else if(body){
     opts.headers['Content-Type'] = 'application/json';
@@ -577,13 +644,10 @@ async function apiReq(method, path, body){
       throw new Error(msg);
     }
     
-    // Handle empty responses (like 204)
     if(res.status === 204) return {};
-    
     return res.json();
     
   } catch(e) {
-    // Better CORS error detection
     if(e.message.includes('Failed to fetch') || e.name === 'TypeError'){
       console.error('[FoxVault] CORS/Network error - ensure API Gateway has allowCors: true and backend returns Access-Control-Allow-Origin');
       throw new Error('CORS error - cannot connect to API Gateway. Check console for details.');
@@ -593,10 +657,21 @@ async function apiReq(method, path, body){
 }
 
 /* ─────────────────────────────────────────────────────────────
-   AUTH ERROR MESSAGES
+   AUTH ERROR MESSAGES  — now includes Firebase codes
 ───────────────────────────────────────────────────────────── */
 function authErr(code){
-  return({
+  const map = {
+    'auth/user-not-found':'No account found with that email.',
+    'auth/wrong-password':'Incorrect password.',
+    'auth/invalid-email':'Enter a valid email address.',
+    'auth/user-disabled':'This account has been disabled.',
+    'auth/email-already-in-use':'An account with this email already exists.',
+    'auth/weak-password':'Use at least 8 characters.',
+    'auth/too-many-requests':'Too many attempts. Try again later.',
+    'auth/invalid-login-credentials':'Incorrect email or password.',
+    'auth/invalid-credential':'Incorrect email or password.',
+    'auth/multi-factor-auth-required':'Multi-factor authentication required.',
+    'auth/requires-recent-login':'Please sign out and sign in again to perform this action.',
     'EMAIL_NOT_FOUND':'No account found with that email.',
     'INVALID_PASSWORD':'Incorrect password.',
     'INVALID_EMAIL':'Enter a valid email address.',
@@ -605,7 +680,8 @@ function authErr(code){
     'WEAK_PASSWORD':'Use at least 8 characters.',
     'TOO_MANY_ATTEMPTS_TRY_LATER':'Too many attempts. Try again later.',
     'INVALID_LOGIN_CREDENTIALS':'Incorrect email or password.'
-  })[code]||'Something went wrong. Please try again.';
+  };
+  return map[code] || 'Something went wrong. Please try again.';
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -618,7 +694,7 @@ function showErr(id,msg){
 }
 
 function hideAlerts(){
-  ['si-err','su-err','su-ok','fp-err','fp-ok'].forEach(id=>{ 
+  ['si-err','su-err','su-ok','fp-err','fp-ok','mfa-err'].forEach(id=>{ 
     const e=document.getElementById(id); 
     if(e){ e.classList.remove('show'); e.textContent=''; }
   });
@@ -629,8 +705,7 @@ function hideAlerts(){
 function setLoading(p,on){
   document.getElementById(p+'-btn').disabled=on;
   document.getElementById(p+'-spin').classList.toggle('show',on);
-  const labels={si:{on:'Signing in…',off:'Sign In'},su:{on:'Creating account…',off:'Create Account'},fp:{on:'Sending…',off:'Send Reset Link'}};
-  document.getElementById(p+'-label').textContent=on?labels[p].on:labels[p].off;
+  document.getElementById(p+'-label').textContent=on?(p==='si'?'Signing in…':'Creating account…'):(p==='si'?'Sign In':'Create Account');
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -641,23 +716,14 @@ document.getElementById('tab-signup').addEventListener('click',()=>switchTab('si
 
 function switchTab(t){
   hideAlerts();
-  // tab buttons
   ['signin','signup'].forEach(k=>{
     document.getElementById('tab-'+k).classList.toggle('active',k===t);
-  });
-  // panes: signin, signup, forgot
-  ['signin','signup','forgot'].forEach(k=>{
-    const p=document.getElementById('pane-'+k);
-    if(p) p.classList.toggle('active',k===t);
+    document.getElementById('pane-'+k).classList.toggle('active',k===t);
   });
 }
 
-// Forgot password link
-document.getElementById('fp-link-btn').addEventListener('click',()=>switchTab('forgot'));
-document.getElementById('fp-back-btn').addEventListener('click',()=>switchTab('signin'));
-
 /* ─────────────────────────────────────────────────────────────
-   SIGN IN
+   SIGN IN  — with MFA support
 ───────────────────────────────────────────────────────────── */
 document.getElementById('si-btn').addEventListener('click',signIn);
 document.getElementById('si-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') signIn(); });
@@ -680,30 +746,27 @@ async function signIn(){
   
   setLoading('si',true);
   try{
-    const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${CFG.identityApiKey}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw,returnSecureToken:true})});
-    const d=await r.json();
-    if(!r.ok){ 
-      RL.hit(); 
-      const left=RL.check().left; 
-      showErr('si-err',authErr(d.error?.message)+(left<=2?` (${left} attempt(s) left)`:'')); 
-      return; 
+    const cred = await firebaseAuth.signInWithEmailAndPassword(em, pw);
+    const token = await cred.user.getIdToken();
+    Session.set(token, cred.user.email);
+    showDash(cred.user.email);
+  } catch(e) {
+    if(e.code === 'auth/multi-factor-auth-required'){
+      mfaResolver = e.resolver;
+      await startMfaSignIn();
+      setLoading('si', false);
+      return;
     }
-    // Route through MFA before granting dashboard access
-    if(MFA.enrolled(d.email)){
-      showMfaOverlay('verify', d.email, d.idToken);
-    } else {
-      showMfaOverlay('enroll', d.email, d.idToken);
-    }
-  }catch(e){ 
-    console.error('[FoxVault] Sign in error:', e);
-    showErr('si-err','Network error. Check your connection.'); 
+    RL.hit();
+    const left=RL.check().left; 
+    showErr('si-err', authErr(e.code)+(left<=2?` (${left} attempt(s) left)`:'')); 
+  } finally { 
+    if(!mfaResolver) setLoading('si',false); 
   }
-  finally{ setLoading('si',false); }
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SIGN UP
+   SIGN UP  — no longer auto-logs in
 ───────────────────────────────────────────────────────────── */
 document.getElementById('su-btn').addEventListener('click',signUp);
 document.getElementById('su-pass2').addEventListener('keydown',e=>{ if(e.key==='Enter') signUp(); });
@@ -721,25 +784,105 @@ async function signUp(){
   
   setLoading('su',true);
   try{
-    const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${CFG.identityApiKey}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw,returnSecureToken:true})});
-    const d=await r.json();
-    if(!r.ok){ showErr('su-err',authErr(d.error?.message)); return; }
-    // FIX: Do NOT auto-login after signup. Show confirmation and send user to sign-in.
+    await firebaseAuth.createUserWithEmailAndPassword(em, pw);
     const ok=document.getElementById('su-ok'); 
-    ok.textContent='Account created! Please sign in to continue.'; 
+    ok.textContent='Account created! Please sign in with your new credentials.'; 
     ok.classList.add('show');
-    // Clear signup fields for security
-    ['su-email','su-pass','su-pass2'].forEach(id=>document.getElementById(id).value='');
-    // Pre-fill the sign-in email for convenience, then switch after brief delay
-    document.getElementById('si-email').value=em;
-    setTimeout(()=>switchTab('signin'),1800);
+    document.getElementById('su-email').value='';
+    document.getElementById('su-pass').value='';
+    document.getElementById('su-pass2').value='';
+    setTimeout(()=>{
+      hideAlerts();
+      switchTab('signin');
+      document.getElementById('si-email').value=em;
+    }, 1500);
   }catch(e){ 
-    console.error('[FoxVault] Sign up error:', e);
-    showErr('su-err','Network error. Check your connection.'); 
+    showErr('su-err', authErr(e.code) || e.message); 
   }
   finally{ setLoading('su',false); }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   FORGOT PASSWORD
+───────────────────────────────────────────────────────────── */
+document.getElementById('fp-link').addEventListener('click', e => {
+  e.preventDefault();
+  document.getElementById('fpModal').classList.add('show');
+  document.getElementById('fp-email').value = document.getElementById('si-email').value.trim();
+});
+
+document.getElementById('fp-cancel').addEventListener('click', () => {
+  document.getElementById('fpModal').classList.remove('show');
+  hideAlerts();
+});
+
+document.getElementById('fp-submit').addEventListener('click', async () => {
+  const em = document.getElementById('fp-email').value.trim();
+  if(!em){ showErr('fp-err','Please enter your email.'); return; }
+  if(!firebaseAuth){ showErr('fp-err','Auth service unavailable.'); return; }
+  
+  document.getElementById('fp-submit').disabled = true;
+  try {
+    await firebaseAuth.sendPasswordResetEmail(em);
+    document.getElementById('fp-ok').textContent = 'Reset link sent! Check your inbox.';
+    document.getElementById('fp-ok').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('fpModal').classList.remove('show');
+      document.getElementById('fp-ok').classList.remove('show');
+      document.getElementById('fp-email').value = '';
+    }, 2000);
+  } catch(e) {
+    showErr('fp-err', authErr(e.code) || e.message);
+  } finally {
+    document.getElementById('fp-submit').disabled = false;
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────
+   MFA SIGN-IN MODAL
+───────────────────────────────────────────────────────────── */
+async function startMfaSignIn(){
+  document.getElementById('mfaModal').classList.add('show');
+  document.getElementById('mfa-code').value = '';
+  document.getElementById('mfa-err').classList.remove('show');
+  
+  try {
+    const phoneAuthProvider = new firebase.auth.PhoneAuthProvider();
+    const applicationVerifier = new firebase.auth.RecaptchaVerifier('mfa-recaptcha', {
+      size: 'invisible'
+    });
+    mfaVerificationId = await phoneAuthProvider.verifyPhoneNumber({
+      multiFactorHint: mfaResolver.hints[0],
+      session: mfaResolver.session
+    }, applicationVerifier);
+  } catch(e) {
+    showErr('mfa-err', 'Failed to send code: ' + (e.message || e.code));
+  }
+}
+
+document.getElementById('mfa-cancel').addEventListener('click', () => {
+  document.getElementById('mfaModal').classList.remove('show');
+  mfaResolver = null;
+  setLoading('si', false);
+});
+
+document.getElementById('mfa-verify').addEventListener('click', async () => {
+  const code = document.getElementById('mfa-code').value.trim();
+  if(!code || code.length !== 6){ showErr('mfa-err','Enter the 6-digit code.'); return; }
+  
+  try {
+    const phoneCred = firebase.auth.PhoneAuthProvider.credential(mfaVerificationId, code);
+    const assertion = firebase.auth.PhoneMultiFactorGenerator.assertion(phoneCred);
+    const cred = await mfaResolver.resolveSignIn(assertion);
+    const token = await cred.user.getIdToken();
+    Session.set(token, cred.user.email);
+    document.getElementById('mfaModal').classList.remove('show');
+    mfaResolver = null;
+    showDash(cred.user.email);
+  } catch(e) {
+    showErr('mfa-err', e.message || 'Invalid code. Please try again.');
+  }
+});
 
 /* ─────────────────────────────────────────────────────────────
    SCREEN TRANSITIONS
@@ -749,383 +892,32 @@ function showLogin(){
   document.getElementById('screen-dash').classList.remove('visible');
 }
 
-async function showDash(email, token){
-  // FIX: Always set fresh session (clears any stale previous-user state)
-  if(token) Session.set(token, email);
-  // FIX: Wipe docs before load so previous user's docs never flash
-  S.docs=[]; S.events=0; S.storage=0;
-  renderDocs();
+async function showDash(email){
   document.getElementById('screen-login').classList.add('hidden');
   document.getElementById('screen-dash').classList.add('visible');
   document.getElementById('userEmail').textContent=email||Session.email();
-  addAudit('au','LOGIN — authenticated via Identity Platform'+(MFA.enrolled(email)?' · MFA verified':''));
+  addAudit('au','LOGIN — authenticated via Identity Platform');
   await loadDocs();
+  refreshMfaStatus();
 }
 
 /* ─────────────────────────────────────────────────────────────
    LOGOUT
 ───────────────────────────────────────────────────────────── */
-document.getElementById('logoutBtn').addEventListener('click',()=>{
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  try { if(firebaseAuth) await firebaseAuth.signOut(); } catch(e){}
   Session.clear();
-  // FIX: Explicitly wipe in-memory docs so next user cannot see them
   S.docs=[]; S.events=0; S.storage=0;
-  renderDocs();
-  // Note: MFA.clear() would remove all enrolled TOTP secrets — only do this
-  // if you want to force re-enrollment every session. Leaving enrolled status
-  // in sessionStorage is fine since sessionStorage clears on tab close.
   ['si-email','si-pass','su-email','su-pass','su-pass2'].forEach(id=>document.getElementById(id).value='');
   hideAlerts(); switchTab('signin'); showLogin();
 });
 
 /* ─────────────────────────────────────────────────────────────
-   FORGOT PASSWORD
-───────────────────────────────────────────────────────────── */
-document.getElementById('fp-btn').addEventListener('click', sendPasswordReset);
-document.getElementById('fp-email').addEventListener('keydown',e=>{ if(e.key==='Enter') sendPasswordReset(); });
-
-async function sendPasswordReset(){
-  hideAlerts();
-  const em=document.getElementById('fp-email').value.trim();
-  if(!em){ showErr('fp-err','Please enter your email address.'); return; }
-  if(!CFG.identityApiKey){ showErr('fp-err','Auth service unavailable — config not loaded.'); return; }
-  setLoading('fp',true);
-  try{
-    const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${CFG.identityApiKey}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({requestType:'PASSWORD_RESET',email:em})});
-    const d=await r.json();
-    // Always show success message even if email not found (security best practice: don't leak account existence)
-    const ok=document.getElementById('fp-ok');
-    ok.textContent='If an account exists for '+em+', a reset link has been sent. Check your inbox.';
-    ok.classList.add('show');
-    document.getElementById('fp-email').value='';
-    if(!r.ok) console.warn('[FoxVault] Password reset note:', d.error?.message);
-  }catch(e){
-    showErr('fp-err','Network error. Check your connection.');
-  }
-  finally{ setLoading('fp',false); }
-}
-
-/* ─────────────────────────────────────────────────────────────
-   MFA — TOTP via Firebase Identity Platform
-   
-   Flow:
-   1. After login: check if user has MFA enrolled via getAccountInfo
-   2. If enrolled → show verify OTP screen
-   3. If not enrolled → offer to enroll (show QR code + TOTP setup)
-   4. After verify → proceed to dashboard
-   
-   Firebase REST API notes:
-   - MFA enrollment/verification requires the Firebase SDK or
-     the REST API with custom tokens. For email/password accounts
-     we use a client-side TOTP approach:
-   - Enrollment: generate secret, show QR, verify once, store
-     encrypted secret in sessionStorage (not production-grade —
-     real TOTP MFA needs server-side verification or Firebase SDK)
-   - This implementation uses a pure JS TOTP library approach
-     for portfolio/demo purposes. In production use Firebase Auth SDK.
-───────────────────────────────────────────────────────────── */
-
-// Minimal TOTP implementation (RFC 6238)
-const TOTP = (() => {
-  // ── Base32 decode (RFC 4648) ──────────────────────────────
-  // Uses rejection sampling so every character is equally likely.
-  function b32decode(s) {
-    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    s = s.replace(/[\s=]+/g, '').toUpperCase();
-    let buf = 0, bitsLeft = 0;
-    const out = [];
-    for (const ch of s) {
-      const idx = CHARS.indexOf(ch);
-      if (idx === -1) continue; // skip invalid chars gracefully
-      buf = (buf << 5) | idx;
-      bitsLeft += 5;
-      if (bitsLeft >= 8) {
-        bitsLeft -= 8;
-        out.push((buf >> bitsLeft) & 0xff);
-      }
-    }
-    return new Uint8Array(out);
-  }
-
-  // ── Generate unbiased Base32 secret ──────────────────────
-  // Rejection-samples from crypto.getRandomValues so every
-  // character has exactly 1/32 probability (no modulo bias).
-  function genSecret(chars = 32) {
-    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    const out = [];
-    // Over-generate random bytes, keep only those in [0, 224)
-    // so that val % 32 is perfectly uniform (224 = 7 * 32).
-    while (out.length < chars) {
-      const buf = new Uint8Array(chars * 2);
-      crypto.getRandomValues(buf);
-      for (const b of buf) {
-        if (out.length >= chars) break;
-        if (b < 224) out.push(CHARS[b % 32]);
-      }
-    }
-    return out.join('');
-  }
-
-  // ── HOTP (RFC 4226) ───────────────────────────────────────
-  // Uses BigInt for the counter so values > 2^31 are correct.
-  async function hotp(secret, counter) {
-    const keyBytes = b32decode(secret);
-    if (keyBytes.length === 0) throw new Error('Invalid Base32 secret');
-
-    // Encode 64-bit counter as big-endian 8 bytes via BigInt
-    const msg = new Uint8Array(8);
-    let c = BigInt(counter);
-    for (let i = 7; i >= 0; i--) {
-      msg[i] = Number(c & 0xffn);
-      c >>= 8n;
-    }
-
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw', keyBytes,
-      { name: 'HMAC', hash: 'SHA-1' },
-      false, ['sign']
-    );
-    const sig = new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, msg));
-
-    // Dynamic truncation — use last byte for offset, not hardcoded index
-    const offset = sig[sig.length - 1] & 0x0f;
-    const code = (
-      ((sig[offset]     & 0x7f) << 24) |
-      ((sig[offset + 1] & 0xff) << 16) |
-      ((sig[offset + 2] & 0xff) <<  8) |
-       (sig[offset + 3] & 0xff)
-    ) % 1_000_000;
-    return String(code).padStart(6, '0');
-  }
-
-  // ── TOTP verify with ±1 window ────────────────────────────
-  async function verify(secret, token) {
-    const t = Math.floor(Date.now() / 30000);
-    for (const delta of [-1, 0, 1]) {
-      try {
-        if (await hotp(secret, t + delta) === token.trim()) return true;
-      } catch { /* skip bad window */ }
-    }
-    return false;
-  }
-
-  // ── otpauth:// URI ────────────────────────────────────────
-  // Format: otpauth://totp/ISSUER:ACCOUNT?secret=S&issuer=ISSUER
-  // Do NOT double-encode the colon between issuer and account.
-  function totpUrl(secret, email) {
-    const issuer  = 'FoxVault';
-    const label   = encodeURIComponent(issuer) + ':' + encodeURIComponent(email);
-    const params  = new URLSearchParams({
-      secret,
-      issuer,
-      algorithm: 'SHA1',
-      digits: '6',
-      period: '30',
-    });
-    return `otpauth://totp/${label}?${params.toString()}`;
-  }
-
-  return { genSecret, verify, totpUrl };
-})();
-
-/* QR CODE — browserified qrcode@1.5.4 bundle (ISO 18004, EC-M, tested) */
-!function t(e,n,r){function o(s,u){if(!n[s]){if(!e[s]){var a="function"==typeof require&&require;if(!u&&a)return a(s,!0);if(i)return i(s,!0);var c=new Error("Cannot find module '"+s+"'");throw c.code="MODULE_NOT_FOUND",c}var l=n[s]={exports:{}};e[s][0].call(l.exports,function(t){return o(e[s][1][t]||t)},l,l.exports,t,e,n,r)}return n[s].exports}for(var i="function"==typeof require&&require,s=0;s<r.length;s++)o(r[s]);return o}({1:[function(t,e,n){"use strict";var r={single_source_shortest_paths:function(t,e,n){var o={},i={};i[e]=0;var s,u,a,c,l,f,h,d=r.PriorityQueue.make();for(d.push(e,0);!d.empty();)for(a in u=(s=d.pop()).value,c=s.cost,l=t[u]||{})l.hasOwnProperty(a)&&(f=c+l[a],h=i[a],(void 0===i[a]||h>f)&&(i[a]=f,d.push(a,f),o[a]=u));if(void 0!==n&&void 0===i[n]){var g=["Could not find a path from ",e," to ",n,"."].join("");throw new Error(g)}return o},extract_shortest_path_from_predecessor_list:function(t,e){for(var n=[],r=e;r;)n.push(r),t[r],r=t[r];return n.reverse(),n},find_path:function(t,e,n){var o=r.single_source_shortest_paths(t,e,n);return r.extract_shortest_path_from_predecessor_list(o,n)},PriorityQueue:{make:function(t){var e,n=r.PriorityQueue,o={};for(e in t=t||{},n)n.hasOwnProperty(e)&&(o[e]=n[e]);return o.queue=[],o.sorter=t.sorter||n.default_sorter,o},default_sorter:function(t,e){return t.cost-e.cost},push:function(t,e){var n={value:t,cost:e};this.queue.push(n),this.queue.sort(this.sorter)},pop:function(){return this.queue.shift()},empty:function(){return 0===this.queue.length}}};void 0!==e&&(e.exports=r)},{}],2:[function(t,e,n){const r=t("./utils").getSymbolSize;n.getRowColCoords=function(t){if(1===t)return[];const e=Math.floor(t/7)+2,n=r(t),o=145===n?26:2*Math.ceil((n-13)/(2*e-2)),i=[n-7];for(let t=1;t<e-1;t++)i[t]=i[t-1]-o;return i.push(6),i.reverse()},n.getPositions=function(t){const e=[],r=n.getRowColCoords(t),o=r.length;for(let t=0;t<o;t++)for(let n=0;n<o;n++)0===t&&0===n||0===t&&n===o-1||t===o-1&&0===n||e.push([r[t],r[n]]);return e}},{"./utils":21}],3:[function(t,e,n){const r=t("./mode"),o=["0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"," ","$","%","*","+","-",".","/",":"];function i(t){this.mode=r.ALPHANUMERIC,this.data=t}i.getBitsLength=function(t){return 11*Math.floor(t/2)+t%2*6},i.prototype.getLength=function(){return this.data.length},i.prototype.getBitsLength=function(){return i.getBitsLength(this.data.length)},i.prototype.write=function(t){let e;for(e=0;e+2<=this.data.length;e+=2){let n=45*o.indexOf(this.data[e]);n+=o.indexOf(this.data[e+1]),t.put(n,11)}this.data.length%2&&t.put(o.indexOf(this.data[e]),6)},e.exports=i},{"./mode":14}],4:[function(t,e,n){function r(){this.buffer=[],this.length=0}r.prototype={get:function(t){const e=Math.floor(t/8);return 1==(this.buffer[e]>>>7-t%8&1)},put:function(t,e){for(let n=0;n<e;n++)this.putBit(1==(t>>>e-n-1&1))},getLengthInBits:function(){return this.length},putBit:function(t){const e=Math.floor(this.length/8);this.buffer.length<=e&&this.buffer.push(0),t&&(this.buffer[e]|=128>>>this.length%8),this.length++}},e.exports=r},{}],5:[function(t,e,n){function r(t){if(!t||t<1)throw new Error("BitMatrix size must be defined and greater than 0");this.size=t,this.data=new Uint8Array(t*t),this.reservedBit=new Uint8Array(t*t)}r.prototype.set=function(t,e,n,r){const o=t*this.size+e;this.data[o]=n,r&&(this.reservedBit[o]=!0)},r.prototype.get=function(t,e){return this.data[t*this.size+e]},r.prototype.xor=function(t,e,n){this.data[t*this.size+e]^=n},r.prototype.isReserved=function(t,e){return this.reservedBit[t*this.size+e]},e.exports=r},{}],6:[function(t,e,n){const r=t("./mode");function o(t){this.mode=r.BYTE,this.data="string"==typeof t?(new TextEncoder).encode(t):new Uint8Array(t)}o.getBitsLength=function(t){return 8*t},o.prototype.getLength=function(){return this.data.length},o.prototype.getBitsLength=function(){return o.getBitsLength(this.data.length)},o.prototype.write=function(t){for(let e=0,n=this.data.length;e<n;e++)t.put(this.data[e],8)},e.exports=o},{"./mode":14}],7:[function(t,e,n){const r=t("./error-correction-level"),o=[1,1,1,1,1,1,1,1,1,1,2,2,1,2,2,4,1,2,4,4,2,4,4,4,2,4,6,5,2,4,6,6,2,5,8,8,4,5,8,8,4,5,8,11,4,8,10,11,4,9,12,16,4,9,16,16,6,10,12,18,6,10,17,16,6,11,16,19,6,13,18,21,7,14,21,25,8,16,20,25,8,17,23,25,9,17,23,34,9,18,25,30,10,20,27,32,12,21,29,35,12,23,34,37,12,25,34,40,13,26,35,42,14,28,38,45,15,29,40,48,16,31,43,51,17,33,45,54,18,35,48,57,19,37,51,60,19,38,53,63,20,40,56,66,21,43,59,70,22,45,62,74,24,47,65,77,25,49,68,81],i=[7,10,13,17,10,16,22,28,15,26,36,44,20,36,52,64,26,48,72,88,36,64,96,112,40,72,108,130,48,88,132,156,60,110,160,192,72,130,192,224,80,150,224,264,96,176,260,308,104,198,288,352,120,216,320,384,132,240,360,432,144,280,408,480,168,308,448,532,180,338,504,588,196,364,546,650,224,416,600,700,224,442,644,750,252,476,690,816,270,504,750,900,300,560,810,960,312,588,870,1050,336,644,952,1110,360,700,1020,1200,390,728,1050,1260,420,784,1140,1350,450,812,1200,1440,480,868,1290,1530,510,924,1350,1620,540,980,1440,1710,570,1036,1530,1800,570,1064,1590,1890,600,1120,1680,1980,630,1204,1770,2100,660,1260,1860,2220,720,1316,1950,2310,750,1372,2040,2430];n.getBlocksCount=function(t,e){switch(e){case r.L:return o[4*(t-1)+0];case r.M:return o[4*(t-1)+1];case r.Q:return o[4*(t-1)+2];case r.H:return o[4*(t-1)+3];default:return}},n.getTotalCodewordsCount=function(t,e){switch(e){case r.L:return i[4*(t-1)+0];case r.M:return i[4*(t-1)+1];case r.Q:return i[4*(t-1)+2];case r.H:return i[4*(t-1)+3];default:return}}},{"./error-correction-level":8}],8:[function(t,e,n){n.L={bit:1},n.M={bit:0},n.Q={bit:3},n.H={bit:2},n.isValid=function(t){return t&&void 0!==t.bit&&t.bit>=0&&t.bit<4},n.from=function(t,e){if(n.isValid(t))return t;try{return function(t){if("string"!=typeof t)throw new Error("Param is not a string");switch(t.toLowerCase()){case"l":case"low":return n.L;case"m":case"medium":return n.M;case"q":case"quartile":return n.Q;case"h":case"high":return n.H;default:throw new Error("Unknown EC Level: "+t)}}(t)}catch(t){return e}}},{}],9:[function(t,e,n){const r=t("./utils").getSymbolSize;n.getPositions=function(t){const e=r(t);return[[0,0],[e-7,0],[0,e-7]]}},{"./utils":21}],10:[function(t,e,n){const r=t("./utils"),o=r.getBCHDigit(1335);n.getEncodedBits=function(t,e){const n=t.bit<<3|e;let i=n<<10;for(;r.getBCHDigit(i)-o>=0;)i^=1335<<r.getBCHDigit(i)-o;return 21522^(n<<10|i)}},{"./utils":21}],11:[function(t,e,n){const r=new Uint8Array(512),o=new Uint8Array(256);!function(){let t=1;for(let e=0;e<255;e++)r[e]=t,o[t]=e,t<<=1,256&t&&(t^=285);for(let t=255;t<512;t++)r[t]=r[t-255]}(),n.log=function(t){if(t<1)throw new Error("log("+t+")");return o[t]},n.exp=function(t){return r[t]},n.mul=function(t,e){return 0===t||0===e?0:r[o[t]+o[e]]}},{}],12:[function(t,e,n){const r=t("./mode"),o=t("./utils");function i(t){this.mode=r.KANJI,this.data=t}i.getBitsLength=function(t){return 13*t},i.prototype.getLength=function(){return this.data.length},i.prototype.getBitsLength=function(){return i.getBitsLength(this.data.length)},i.prototype.write=function(t){let e;for(e=0;e<this.data.length;e++){let n=o.toSJIS(this.data[e]);if(n>=33088&&n<=40956)n-=33088;else{if(!(n>=57408&&n<=60351))throw new Error("Invalid SJIS character: "+this.data[e]+"\nMake sure your charset is UTF-8");n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13)}},e.exports=i},{"./mode":14,"./utils":21}],13:[function(t,e,n){n.Patterns={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7};const r=3,o=3,i=40,s=10;function u(t,e,r){switch(t){case n.Patterns.PATTERN000:return(e+r)%2==0;case n.Patterns.PATTERN001:return e%2==0;case n.Patterns.PATTERN010:return r%3==0;case n.Patterns.PATTERN011:return(e+r)%3==0;case n.Patterns.PATTERN100:return(Math.floor(e/2)+Math.floor(r/3))%2==0;case n.Patterns.PATTERN101:return e*r%2+e*r%3==0;case n.Patterns.PATTERN110:return(e*r%2+e*r%3)%2==0;case n.Patterns.PATTERN111:return(e*r%3+(e+r)%2)%2==0;default:throw new Error("bad maskPattern:"+t)}}n.isValid=function(t){return null!=t&&""!==t&&!isNaN(t)&&t>=0&&t<=7},n.from=function(t){return n.isValid(t)?parseInt(t,10):void 0},n.getPenaltyN1=function(t){const e=t.size;let n=0,o=0,i=0,s=null,u=null;for(let a=0;a<e;a++){o=i=0,s=u=null;for(let c=0;c<e;c++){let e=t.get(a,c);e===s?o++:(o>=5&&(n+=r+(o-5)),s=e,o=1),e=t.get(c,a),e===u?i++:(i>=5&&(n+=r+(i-5)),u=e,i=1)}o>=5&&(n+=r+(o-5)),i>=5&&(n+=r+(i-5))}return n},n.getPenaltyN2=function(t){const e=t.size;let n=0;for(let r=0;r<e-1;r++)for(let o=0;o<e-1;o++){const e=t.get(r,o)+t.get(r,o+1)+t.get(r+1,o)+t.get(r+1,o+1);4!==e&&0!==e||n++}return n*o},n.getPenaltyN3=function(t){const e=t.size;let n=0,r=0,o=0;for(let i=0;i<e;i++){r=o=0;for(let s=0;s<e;s++)r=r<<1&2047|t.get(i,s),s>=10&&(1488===r||93===r)&&n++,o=o<<1&2047|t.get(s,i),s>=10&&(1488===o||93===o)&&n++}return n*i},n.getPenaltyN4=function(t){let e=0;const n=t.data.length;for(let r=0;r<n;r++)e+=t.data[r];return Math.abs(Math.ceil(100*e/n/5)-10)*s},n.applyMask=function(t,e){const n=e.size;for(let r=0;r<n;r++)for(let o=0;o<n;o++)e.isReserved(o,r)||e.xor(o,r,u(t,o,r))},n.getBestMask=function(t,e){const r=Object.keys(n.Patterns).length;let o=0,i=1/0;for(let s=0;s<r;s++){e(s),n.applyMask(s,t);const r=n.getPenaltyN1(t)+n.getPenaltyN2(t)+n.getPenaltyN3(t)+n.getPenaltyN4(t);n.applyMask(s,t),r<i&&(i=r,o=s)}return o}},{}],14:[function(t,e,n){const r=t("./version-check"),o=t("./regex");n.NUMERIC={id:"Numeric",bit:1,ccBits:[10,12,14]},n.ALPHANUMERIC={id:"Alphanumeric",bit:2,ccBits:[9,11,13]},n.BYTE={id:"Byte",bit:4,ccBits:[8,16,16]},n.KANJI={id:"Kanji",bit:8,ccBits:[8,10,12]},n.MIXED={bit:-1},n.getCharCountIndicator=function(t,e){if(!t.ccBits)throw new Error("Invalid mode: "+t);if(!r.isValid(e))throw new Error("Invalid version: "+e);return e>=1&&e<10?t.ccBits[0]:e<27?t.ccBits[1]:t.ccBits[2]},n.getBestModeForData=function(t){return o.testNumeric(t)?n.NUMERIC:o.testAlphanumeric(t)?n.ALPHANUMERIC:o.testKanji(t)?n.KANJI:n.BYTE},n.toString=function(t){if(t&&t.id)return t.id;throw new Error("Invalid mode")},n.isValid=function(t){return t&&t.bit&&t.ccBits},n.from=function(t,e){if(n.isValid(t))return t;try{return function(t){if("string"!=typeof t)throw new Error("Param is not a string");switch(t.toLowerCase()){case"numeric":return n.NUMERIC;case"alphanumeric":return n.ALPHANUMERIC;case"kanji":return n.KANJI;case"byte":return n.BYTE;default:throw new Error("Unknown mode: "+t)}}(t)}catch(t){return e}}},{"./regex":19,"./version-check":22}],15:[function(t,e,n){const r=t("./mode");function o(t){this.mode=r.NUMERIC,this.data=t.toString()}o.getBitsLength=function(t){return 10*Math.floor(t/3)+(t%3?t%3*3+1:0)},o.prototype.getLength=function(){return this.data.length},o.prototype.getBitsLength=function(){return o.getBitsLength(this.data.length)},o.prototype.write=function(t){let e,n,r;for(e=0;e+3<=this.data.length;e+=3)n=this.data.substr(e,3),r=parseInt(n,10),t.put(r,10);const o=this.data.length-e;o>0&&(n=this.data.substr(e),r=parseInt(n,10),t.put(r,3*o+1))},e.exports=o},{"./mode":14}],16:[function(t,e,n){const r=t("./galois-field");n.mul=function(t,e){const n=new Uint8Array(t.length+e.length-1);for(let o=0;o<t.length;o++)for(let i=0;i<e.length;i++)n[o+i]^=r.mul(t[o],e[i]);return n},n.mod=function(t,e){let n=new Uint8Array(t);for(;n.length-e.length>=0;){const t=n[0];for(let o=0;o<e.length;o++)n[o]^=r.mul(e[o],t);let o=0;for(;o<n.length&&0===n[o];)o++;n=n.slice(o)}return n},n.generateECPolynomial=function(t){let e=new Uint8Array([1]);for(let o=0;o<t;o++)e=n.mul(e,new Uint8Array([1,r.exp(o)]));return e}},{"./galois-field":11}],17:[function(t,e,n){const r=t("./utils"),o=t("./error-correction-level"),i=t("./bit-buffer"),s=t("./bit-matrix"),u=t("./alignment-pattern"),a=t("./finder-pattern"),c=t("./mask-pattern"),l=t("./error-correction-code"),f=t("./reed-solomon-encoder"),h=t("./version"),d=t("./format-info"),g=t("./mode"),p=t("./segments");function m(t,e,n){const r=t.size,o=d.getEncodedBits(e,n);let i,s;for(i=0;i<15;i++)s=1==(o>>i&1),i<6?t.set(i,8,s,!0):i<8?t.set(i+1,8,s,!0):t.set(r-15+i,8,s,!0),i<8?t.set(8,r-i-1,s,!0):i<9?t.set(8,15-i-1+1,s,!0):t.set(8,15-i-1,s,!0);t.set(r-8,8,1,!0)}function w(t,e,n){const o=new i;n.forEach(function(e){o.put(e.mode.bit,4),o.put(e.getLength(),g.getCharCountIndicator(e.mode,t)),e.write(o)});const s=8*(r.getSymbolTotalCodewords(t)-l.getTotalCodewordsCount(t,e));for(o.getLengthInBits()+4<=s&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(0);const u=(s-o.getLengthInBits())/8;for(let t=0;t<u;t++)o.put(t%2?17:236,8);return function(t,e,n){const o=r.getSymbolTotalCodewords(e),i=l.getTotalCodewordsCount(e,n),s=o-i,u=l.getBlocksCount(e,n),a=o%u,c=u-a,h=Math.floor(o/u),d=Math.floor(s/u),g=d+1,p=h-d,m=new f(p);let w=0;const E=new Array(u),y=new Array(u);let A=0;const B=new Uint8Array(t.buffer);for(let t=0;t<u;t++){const e=t<c?d:g;E[t]=B.slice(w,w+e),y[t]=m.encode(E[t]),w+=e,A=Math.max(A,e)}const C=new Uint8Array(o);let N,M,v=0;for(N=0;N<A;N++)for(M=0;M<u;M++)N<E[M].length&&(C[v++]=E[M][N]);for(N=0;N<p;N++)for(M=0;M<u;M++)C[v++]=y[M][N];return C}(o,t,e)}function E(t,e,n,o){let i;if(Array.isArray(t))i=p.fromArray(t);else{if("string"!=typeof t)throw new Error("Invalid data");{let r=e;if(!r){const e=p.rawSplit(t);r=h.getBestVersionForData(e,n)}i=p.fromString(t,r||40)}}const l=h.getBestVersionForData(i,n);if(!l)throw new Error("The amount of data is too big to be stored in a QR Code");if(e){if(e<l)throw new Error("\nThe chosen QR Code version cannot contain this amount of data.\nMinimum version required to store current data is: "+l+".\n")}else e=l;const f=w(e,n,i),d=r.getSymbolSize(e),g=new s(d);return function(t,e){const n=t.size,r=a.getPositions(e);for(let e=0;e<r.length;e++){const o=r[e][0],i=r[e][1];for(let e=-1;e<=7;e++)if(!(o+e<=-1||n<=o+e))for(let r=-1;r<=7;r++)i+r<=-1||n<=i+r||(e>=0&&e<=6&&(0===r||6===r)||r>=0&&r<=6&&(0===e||6===e)||e>=2&&e<=4&&r>=2&&r<=4?t.set(o+e,i+r,!0,!0):t.set(o+e,i+r,!1,!0))}}(g,e),function(t){const e=t.size;for(let n=8;n<e-8;n++){const e=n%2==0;t.set(n,6,e,!0),t.set(6,n,e,!0)}}(g),function(t,e){const n=u.getPositions(e);for(let e=0;e<n.length;e++){const r=n[e][0],o=n[e][1];for(let e=-2;e<=2;e++)for(let n=-2;n<=2;n++)-2===e||2===e||-2===n||2===n||0===e&&0===n?t.set(r+e,o+n,!0,!0):t.set(r+e,o+n,!1,!0)}}(g,e),m(g,n,0),e>=7&&function(t,e){const n=t.size,r=h.getEncodedBits(e);let o,i,s;for(let e=0;e<18;e++)o=Math.floor(e/3),i=e%3+n-8-3,s=1==(r>>e&1),t.set(o,i,s,!0),t.set(i,o,s,!0)}(g,e),function(t,e){const n=t.size;let r=-1,o=n-1,i=7,s=0;for(let u=n-1;u>0;u-=2)for(6===u&&u--;;){for(let n=0;n<2;n++)if(!t.isReserved(o,u-n)){let r=!1;s<e.length&&(r=1==(e[s]>>>i&1)),t.set(o,u-n,r),i--,-1===i&&(s++,i=7)}if(o+=r,o<0||n<=o){o-=r,r=-r;break}}}(g,f),isNaN(o)&&(o=c.getBestMask(g,m.bind(null,g,n))),c.applyMask(o,g),m(g,n,o),{modules:g,version:e,errorCorrectionLevel:n,maskPattern:o,segments:i}}n.create=function(t,e){if(void 0===t||""===t)throw new Error("No input text");let n,i,s=o.M;return void 0!==e&&(s=o.from(e.errorCorrectionLevel,o.M),n=h.from(e.version),i=c.from(e.maskPattern),e.toSJISFunc&&r.setToSJISFunction(e.toSJISFunc)),E(t,n,s,i)}},{"./alignment-pattern":2,"./bit-buffer":4,"./bit-matrix":5,"./error-correction-code":7,"./error-correction-level":8,"./finder-pattern":9,"./format-info":10,"./mask-pattern":13,"./mode":14,"./reed-solomon-encoder":18,"./segments":20,"./utils":21,"./version":23}],18:[function(t,e,n){const r=t("./polynomial");function o(t){this.genPoly=void 0,this.degree=t,this.degree&&this.initialize(this.degree)}o.prototype.initialize=function(t){this.degree=t,this.genPoly=r.generateECPolynomial(this.degree)},o.prototype.encode=function(t){if(!this.genPoly)throw new Error("Encoder not initialized");const e=new Uint8Array(t.length+this.degree);e.set(t);const n=r.mod(e,this.genPoly),o=this.degree-n.length;if(o>0){const t=new Uint8Array(this.degree);return t.set(n,o),t}return n},e.exports=o},{"./polynomial":16}],19:[function(t,e,n){const r="[0-9]+";let o="(?:[u3000-u303F]|[u3040-u309F]|[u30A0-u30FF]|[uFF00-uFFEF]|[u4E00-u9FAF]|[u2605-u2606]|[u2190-u2195]|u203B|[u2010u2015u2018u2019u2025u2026u201Cu201Du2225u2260]|[u0391-u0451]|[u00A7u00A8u00B1u00B4u00D7u00F7])+";o=o.replace(/u/g,"\\u");const i="(?:(?![A-Z0-9 $%*+\\-./:]|"+o+")(?:.|[\r\n]))+";n.KANJI=new RegExp(o,"g"),n.BYTE_KANJI=new RegExp("[^A-Z0-9 $%*+\\-./:]+","g"),n.BYTE=new RegExp(i,"g"),n.NUMERIC=new RegExp(r,"g"),n.ALPHANUMERIC=new RegExp("[A-Z $%*+\\-./:]+","g");const s=new RegExp("^"+o+"$"),u=new RegExp("^"+r+"$"),a=new RegExp("^[A-Z0-9 $%*+\\-./:]+$");n.testKanji=function(t){return s.test(t)},n.testNumeric=function(t){return u.test(t)},n.testAlphanumeric=function(t){return a.test(t)}},{}],20:[function(t,e,n){const r=t("./mode"),o=t("./numeric-data"),i=t("./alphanumeric-data"),s=t("./byte-data"),u=t("./kanji-data"),a=t("./regex"),c=t("./utils"),l=t("dijkstrajs");function f(t){return unescape(encodeURIComponent(t)).length}function h(t,e,n){const r=[];let o;for(;null!==(o=t.exec(n));)r.push({data:o[0],index:o.index,mode:e,length:o[0].length});return r}function d(t){const e=h(a.NUMERIC,r.NUMERIC,t),n=h(a.ALPHANUMERIC,r.ALPHANUMERIC,t);let o,i;c.isKanjiModeEnabled()?(o=h(a.BYTE,r.BYTE,t),i=h(a.KANJI,r.KANJI,t)):(o=h(a.BYTE_KANJI,r.BYTE,t),i=[]);return e.concat(n,o,i).sort(function(t,e){return t.index-e.index}).map(function(t){return{data:t.data,mode:t.mode,length:t.length}})}function g(t,e){switch(e){case r.NUMERIC:return o.getBitsLength(t);case r.ALPHANUMERIC:return i.getBitsLength(t);case r.KANJI:return u.getBitsLength(t);case r.BYTE:return s.getBitsLength(t)}}function p(t,e){let n;const a=r.getBestModeForData(t);if(n=r.from(e,a),n!==r.BYTE&&n.bit<a.bit)throw new Error('"'+t+'" cannot be encoded with mode '+r.toString(n)+".\n Suggested mode is: "+r.toString(a));switch(n!==r.KANJI||c.isKanjiModeEnabled()||(n=r.BYTE),n){case r.NUMERIC:return new o(t);case r.ALPHANUMERIC:return new i(t);case r.KANJI:return new u(t);case r.BYTE:return new s(t)}}n.fromArray=function(t){return t.reduce(function(t,e){return"string"==typeof e?t.push(p(e,null)):e.data&&t.push(p(e.data,e.mode)),t},[])},n.fromString=function(t,e){const o=function(t){const e=[];for(let n=0;n<t.length;n++){const o=t[n];switch(o.mode){case r.NUMERIC:e.push([o,{data:o.data,mode:r.ALPHANUMERIC,length:o.length},{data:o.data,mode:r.BYTE,length:o.length}]);break;case r.ALPHANUMERIC:e.push([o,{data:o.data,mode:r.BYTE,length:o.length}]);break;case r.KANJI:e.push([o,{data:o.data,mode:r.BYTE,length:f(o.data)}]);break;case r.BYTE:e.push([{data:o.data,mode:r.BYTE,length:f(o.data)}])}}return e}(d(t,c.isKanjiModeEnabled())),i=function(t,e){const n={},o={start:{}};let i=["start"];for(let s=0;s<t.length;s++){const u=t[s],a=[];for(let t=0;t<u.length;t++){const c=u[t],l=""+s+t;a.push(l),n[l]={node:c,lastCount:0},o[l]={};for(let t=0;t<i.length;t++){const s=i[t];n[s]&&n[s].node.mode===c.mode?(o[s][l]=g(n[s].lastCount+c.length,c.mode)-g(n[s].lastCount,c.mode),n[s].lastCount+=c.length):(n[s]&&(n[s].lastCount=c.length),o[s][l]=g(c.length,c.mode)+4+r.getCharCountIndicator(c.mode,e))}}i=a}for(let t=0;t<i.length;t++)o[i[t]].end=0;return{map:o,table:n}}(o,e),s=l.find_path(i.map,"start","end"),u=[];for(let t=1;t<s.length-1;t++)u.push(i.table[s[t]].node);return n.fromArray(function(t){return t.reduce(function(t,e){const n=t.length-1>=0?t[t.length-1]:null;return n&&n.mode===e.mode?(t[t.length-1].data+=e.data,t):(t.push(e),t)},[])}(u))},n.rawSplit=function(t){return n.fromArray(d(t,c.isKanjiModeEnabled()))}},{"./alphanumeric-data":3,"./byte-data":6,"./kanji-data":12,"./mode":14,"./numeric-data":15,"./regex":19,"./utils":21,dijkstrajs:1}],21:[function(t,e,n){let r;const o=[0,26,44,70,100,134,172,196,242,292,346,404,466,532,581,655,733,815,901,991,1085,1156,1258,1364,1474,1588,1706,1828,1921,2051,2185,2323,2465,2611,2761,2876,3034,3196,3362,3532,3706];n.getSymbolSize=function(t){if(!t)throw new Error('"version" cannot be null or undefined');if(t<1||t>40)throw new Error('"version" should be in range from 1 to 40');return 4*t+17},n.getSymbolTotalCodewords=function(t){return o[t]},n.getBCHDigit=function(t){let e=0;for(;0!==t;)e++,t>>>=1;return e},n.setToSJISFunction=function(t){if("function"!=typeof t)throw new Error('"toSJISFunc" is not a valid function.');r=t},n.isKanjiModeEnabled=function(){return void 0!==r},n.toSJIS=function(t){return r(t)}},{}],22:[function(t,e,n){n.isValid=function(t){return!isNaN(t)&&t>=1&&t<=40}},{}],23:[function(t,e,n){const r=t("./utils"),o=t("./error-correction-code"),i=t("./error-correction-level"),s=t("./mode"),u=t("./version-check"),a=r.getBCHDigit(7973);function c(t,e){return s.getCharCountIndicator(t,e)+4}function l(t,e){let n=0;return t.forEach(function(t){const r=c(t.mode,e);n+=r+t.getBitsLength()}),n}n.from=function(t,e){return u.isValid(t)?parseInt(t,10):e},n.getCapacity=function(t,e,n){if(!u.isValid(t))throw new Error("Invalid QR Code version");void 0===n&&(n=s.BYTE);const i=8*(r.getSymbolTotalCodewords(t)-o.getTotalCodewordsCount(t,e));if(n===s.MIXED)return i;const a=i-c(n,t);switch(n){case s.NUMERIC:return Math.floor(a/10*3);case s.ALPHANUMERIC:return Math.floor(a/11*2);case s.KANJI:return Math.floor(a/13);case s.BYTE:default:return Math.floor(a/8)}},n.getBestVersionForData=function(t,e){let r;const o=i.from(e,i.M);if(Array.isArray(t)){if(t.length>1)return function(t,e){for(let r=1;r<=40;r++)if(l(t,r)<=n.getCapacity(r,e,s.MIXED))return r}(t,o);if(0===t.length)return 1;r=t[0]}else r=t;return function(t,e,r){for(let o=1;o<=40;o++)if(e<=n.getCapacity(o,r,t))return o}(r.mode,r.getLength(),o)},n.getEncodedBits=function(t){if(!u.isValid(t)||t<7)throw new Error("Invalid QR Code version");let e=t<<12;for(;r.getBCHDigit(e)-a>=0;)e^=7973<<r.getBCHDigit(e)-a;return t<<12|e}},{"./error-correction-code":7,"./error-correction-level":8,"./mode":14,"./utils":21,"./version-check":22}],24:[function(t,e,n){const r=t("./package/lib/core/qrcode");window.QRMaker={toSVG:function(t,e){const n=(e=e||{}).cell||5,o=null!=e.margin?e.margin:4,i=r.create(t,{errorCorrectionLevel:e.ec||"M"}),s=i.modules.size,u=(s+2*o)*n;let a="";for(let t=0;t<s;t++)for(let e=0;e<s;e++)if(i.modules.get(t,e)){a+='<rect x="'+(e+o)*n+'" y="'+(t+o)*n+'" width="'+n+'" height="'+n+'"/>'}return'<svg xmlns="http://www.w3.org/2000/svg" width="'+u+'" height="'+u+'" viewBox="0 0 '+u+" "+u+'"><rect width="'+u+'" height="'+u+'" fill="white"/><g fill="black">'+a+"</g></svg>"}}},{"./package/lib/core/qrcode":17}]},{},[24]);
-
-/* drawQR: renders a scannable QR code into an <img> tag.
-   Uses QRMaker.toSVG() from the bundled qrcode library.
-   The canvas element is replaced with an img for SVG display. */
-function drawQR(canvas, text) {
-  try {
-    const svg = window.QRMaker.toSVG(text, { cell: 5, margin: 4, ec: 'M' });
-    const b64 = btoa(unescape(encodeURIComponent(svg)));
-    const dataUri = 'data:image/svg+xml;base64,' + b64;
-    // Replace canvas with an img (SVG renders crisply at any size)
-    const img = document.createElement('img');
-    img.src = dataUri;
-    img.width = 220;
-    img.height = 220;
-    img.style.cssText = 'border-radius:12px;border:4px solid white;display:block;margin:0 auto;';
-    img.alt = 'MFA QR Code';
-    canvas.replaceWith(img);
-  } catch(e) {
-    // Fallback: show manual entry instruction on canvas
-    const ctx = canvas.getContext('2d');
-    canvas.width = canvas.height = 220;
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,220,220);
-    ctx.fillStyle = '#444'; ctx.font = '13px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('Enter the key below', 110, 110);
-    ctx.fillText('in your authenticator app', 110, 130);
-    console.error('[FoxVault] QR render failed:', e);
-  }
-}
-
-// MFA session state
-const MFA = {
-  _key: 'fv_mfa',
-  enrolled(email) {
-    try { 
-      const d = JSON.parse(sessionStorage.getItem(this._key) || '{}');
-      return d[email] ? true : false;
-    } catch { return false; }
-  },
-  getSecret(email) {
-    try { 
-      const d = JSON.parse(sessionStorage.getItem(this._key) || '{}');
-      return d[email] || null;
-    } catch { return null; }
-  },
-  enroll(email, secret) {
-    try {
-      const d = JSON.parse(sessionStorage.getItem(this._key) || '{}');
-      d[email] = secret;
-      sessionStorage.setItem(this._key, JSON.stringify(d));
-    } catch {}
-  },
-  clear() { sessionStorage.removeItem(this._key); }
-};
-
-let _pendingEmail = null; // email waiting for MFA verify after sign-in
-
-function showMfaOverlay(mode, email, token) {
-  const overlay = document.getElementById('mfa-overlay');
-  const box = document.getElementById('mfa-box');
-  overlay.classList.add('show');
-
-  if (mode === 'verify') {
-    box.innerHTML = `
-      <div class="mfa-title">🔐 Two-Factor Auth</div>
-      <div class="mfa-sub">Enter the 6-digit code from your authenticator app.</div>
-      <div class="mfa-err" id="mfa-err"></div>
-      <div class="otp-row" id="otp-row">
-        ${[0,1,2,3,4,5].map(i=>`<input class="otp-digit" id="otp-${i}" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" aria-label="Digit ${i+1}"/>`).join('')}
-      </div>
-      <button class="submit-btn" id="mfa-verify-btn" type="button">
-        <div class="spinner" id="mfa-spin"></div>
-        <span id="mfa-label">Verify</span>
-      </button>`;
-    setupOtpInputs('otp-row', 6);
-    document.getElementById('mfa-verify-btn').addEventListener('click', async () => {
-      const code = [0,1,2,3,4,5].map(i=>document.getElementById('otp-'+i).value).join('');
-      if(code.length < 6){ showMfaErr('Enter all 6 digits.'); return; }
-      const secret = MFA.getSecret(email);
-      document.getElementById('mfa-verify-btn').disabled = true;
-      document.getElementById('mfa-spin').classList.add('show');
-      document.getElementById('mfa-label').textContent = 'Verifying…';
-      const ok = await TOTP.verify(secret, code);
-      document.getElementById('mfa-verify-btn').disabled = false;
-      document.getElementById('mfa-spin').classList.remove('show');
-      document.getElementById('mfa-label').textContent = 'Verify';
-      if(ok){ closeMfaOverlay(); showDash(email, token); }
-      else { showMfaErr('Incorrect code. Try again.'); clearOtpInputs(6); }
-    });
-
-  } else if (mode === 'enroll') {
-    const secret = TOTP.genSecret();
-    const url = TOTP.totpUrl(secret, email);
-    box.innerHTML = `
-      <div class="mfa-enroll-badge">🛡 New: MFA Available</div>
-      <div class="mfa-title">Set Up 2FA</div>
-      <div class="mfa-sub">Add a one-time password authenticator for extra protection.</div>
-      <div class="mfa-err" id="mfa-err"></div>
-      <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
-      <div class="secret-code" id="secret-display" title="Click to copy">${secret}</div>
-      <div class="mfa-steps"><ol>
-        <li>Open Google Authenticator, Authy, or any TOTP app.</li>
-        <li>Tap <strong>+</strong> → <em>Enter a setup key</em>.</li>
-        <li>Paste the key shown above. Set Time-based = on.</li>
-        <li>Enter the 6-digit code below to confirm setup.</li>
-      </ol></div>
-      <div class="otp-row" id="otp-row">
-        ${[0,1,2,3,4,5].map(i=>`<input class="otp-digit" id="otp-${i}" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]*" aria-label="Digit ${i+1}"/>`).join('')}
-      </div>
-      <button class="submit-btn" id="mfa-verify-btn" type="button">
-        <div class="spinner" id="mfa-spin"></div>
-        <span id="mfa-label">Enable 2FA &amp; Continue</span>
-      </button>
-      <button class="skip-link" id="mfa-skip-btn" type="button">Skip for now</button>`;
-
-    drawQR(document.getElementById('qr-canvas'), url);
-
-    document.getElementById('secret-display').addEventListener('click', () => {
-      navigator.clipboard.writeText(secret).then(()=>toast('📋','Copied','Secret key copied to clipboard'));
-    });
-
-    document.getElementById('mfa-skip-btn').addEventListener('click', () => {
-      closeMfaOverlay();
-      showDash(email, token);
-    });
-
-    document.getElementById('mfa-verify-btn').addEventListener('click', async () => {
-      const code = [0,1,2,3,4,5].map(i=>document.getElementById('otp-'+i).value).join('');
-      if(code.length < 6){ showMfaErr('Enter all 6 digits to confirm.'); return; }
-      document.getElementById('mfa-verify-btn').disabled = true;
-      document.getElementById('mfa-spin').classList.add('show');
-      document.getElementById('mfa-label').textContent = 'Verifying…';
-      const ok = await TOTP.verify(secret, code);
-      document.getElementById('mfa-verify-btn').disabled = false;
-      document.getElementById('mfa-spin').classList.remove('show');
-      document.getElementById('mfa-label').textContent = 'Enable 2FA & Continue';
-      if(ok){
-        MFA.enroll(email, secret);
-        toast('🛡','2FA Enabled','Your account is now protected with MFA.');
-        closeMfaOverlay();
-        showDash(email, token);
-      } else {
-        showMfaErr('Code mismatch — make sure your device clock is correct.');
-        clearOtpInputs(6);
-      }
-    });
-
-    setupOtpInputs('otp-row', 6);
-  }
-}
-
-function showMfaErr(msg){
-  const e = document.getElementById('mfa-err');
-  if(e){ e.textContent=msg; e.classList.add('show'); }
-}
-
-function closeMfaOverlay(){
-  document.getElementById('mfa-overlay').classList.remove('show');
-  document.getElementById('mfa-box').innerHTML='';
-}
-
-function setupOtpInputs(rowId, count) {
-  const row = document.getElementById(rowId);
-  const inputs = Array.from(row.querySelectorAll('.otp-digit'));
-  inputs.forEach((inp, i) => {
-    inp.addEventListener('input', () => {
-      const v = inp.value.replace(/\D/g,'');
-      inp.value = v ? v[0] : '';
-      if(v && i < count - 1) inputs[i+1].focus();
-    });
-    inp.addEventListener('keydown', e => {
-      if(e.key === 'Backspace' && !inp.value && i > 0) inputs[i-1].focus();
-      if(e.key === 'Enter') document.getElementById('mfa-verify-btn').click();
-    });
-    inp.addEventListener('paste', e => {
-      e.preventDefault();
-      const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
-      text.split('').slice(0,count).forEach((ch,j)=>{ if(inputs[i+j]) inputs[i+j].value=ch; });
-      const next = Math.min(i + text.length, count - 1);
-      inputs[next].focus();
-    });
-  });
-  setTimeout(() => inputs[0]?.focus(), 80);
-}
-
-function clearOtpInputs(count) {
-  for(let i=0;i<count;i++){ const el=document.getElementById('otp-'+i); if(el) el.value=''; }
-  document.getElementById('otp-0')?.focus();
-}
-
-/* ─────────────────────────────────────────────────────────────
    DASHBOARD STATE
 ───────────────────────────────────────────────────────────── */
 const S={docs:[],events:0,storage:0};
-const PT={dashboard:'DASHBOARD',documents:'DOCUMENTS',upload:'UPLOAD',audit:'AUDIT LOG',infra:'INFRASTRUCTURE'};
-const PC={dashboard:'Overview',documents:'Documents',upload:'Upload New',audit:'Audit Log',infra:'Tech Stack'};
+const PT={dashboard:'DASHBOARD',documents:'DOCUMENTS',upload:'UPLOAD',audit:'AUDIT LOG',infra:'INFRASTRUCTURE',security:'SECURITY'};
+const PC={dashboard:'Overview',documents:'Documents',upload:'Upload New',audit:'Audit Log',infra:'Tech Stack',security:'Multi-Factor Auth'};
 
 /* ─────────────────────────────────────────────────────────────
    NAVIGATION
@@ -1136,6 +928,7 @@ function navTo(page){
   document.querySelectorAll('.nav-item[data-page],.bnav-btn[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));
   document.getElementById('pageTitle').textContent=PT[page]||page.toUpperCase();
   document.getElementById('breadcrumb').textContent=PC[page]||page;
+  if(page === 'security') refreshMfaStatus();
 }
 
 document.querySelectorAll('[data-page]').forEach(el=>{
@@ -1177,7 +970,7 @@ function renderDocs(){
 }
 
 /* ─────────────────────────────────────────────────────────────
-   LOAD DOCS FROM GCP — Fixed with better error handling
+   LOAD DOCS FROM GCP
 ───────────────────────────────────────────────────────────── */
 async function loadDocs(){
   try{
@@ -1206,7 +999,7 @@ async function loadDocs(){
 }
 
 /* ─────────────────────────────────────────────────────────────
-   UPLOAD — Fixed with better error handling
+   UPLOAD
 ───────────────────────────────────────────────────────────── */
 function uid(){ 
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{ 
@@ -1249,7 +1042,6 @@ async function go(file){
   bar.classList.add('show'); fill.style.width='0%'; pct.textContent='0%';
   addAudit('up','UPLOAD STARTED — '+esc(file.name)+' · '+sizeMB+' MB');
 
-  // Animate bar to 80% while the real upload is in-flight
   let p=0, stopped=false;
   const ticker=setInterval(()=>{
     if(stopped) return;
@@ -1258,7 +1050,6 @@ async function go(file){
   },200);
 
   try{
-    // Send the raw File object — Cloud Run reads request.get_data()
     const safeName = encodeURIComponent(file.name);
     const data = await apiReq('POST', '/documents?filename=' + safeName, file);
 
@@ -1294,6 +1085,86 @@ async function go(file){
 }
 
 /* ─────────────────────────────────────────────────────────────
+   MFA ENROLLMENT (Security page)
+───────────────────────────────────────────────────────────── */
+let enrollVerifier = null;
+let enrollVerificationId = null;
+
+async function refreshMfaStatus(){
+  if(!firebaseAuth || !firebaseAuth.currentUser){
+    document.getElementById('mfa-status').textContent = 'Not authenticated';
+    return;
+  }
+  await firebaseAuth.currentUser.reload();
+  const factors = firebaseAuth.currentUser.multiFactor.enrolledFactors;
+  if(factors.length > 0){
+    document.getElementById('mfa-status').innerHTML = '<span style="color:var(--emerald)">✓ MFA is enabled</span> · ' + esc(factors[0].displayName || factors[0].phoneNumber);
+    document.getElementById('mfa-enroll-section').style.display = 'none';
+    document.getElementById('mfa-verify-enroll-section').style.display = 'none';
+    document.getElementById('mfa-disable-section').style.display = 'block';
+  } else {
+    document.getElementById('mfa-status').textContent = 'MFA is not enabled';
+    document.getElementById('mfa-enroll-section').style.display = 'block';
+    document.getElementById('mfa-verify-enroll-section').style.display = 'none';
+    document.getElementById('mfa-disable-section').style.display = 'none';
+  }
+}
+
+document.getElementById('mfa-enroll-btn').addEventListener('click', async () => {
+  const phone = document.getElementById('mfa-phone').value.trim();
+  if(!phone){ toast('❌','Error','Enter phone number'); return; }
+  
+  const user = firebaseAuth.currentUser;
+  if(!user){ toast('❌','Error','Please sign in again'); return; }
+  
+  try {
+    const multiFactorSession = await user.multiFactor.getSession();
+    const phoneAuthProvider = new firebase.auth.PhoneAuthProvider();
+    enrollVerifier = new firebase.auth.RecaptchaVerifier('mfa-enroll-recaptcha', {size:'normal'});
+    enrollVerificationId = await phoneAuthProvider.verifyPhoneNumber({
+      phoneNumber: phone,
+      session: multiFactorSession
+    }, enrollVerifier);
+    
+    document.getElementById('mfa-verify-enroll-section').style.display = 'block';
+    toast('📱','Code sent','Check your phone for the verification code');
+  } catch(e) {
+    toast('❌','Enrollment failed', authErr(e.code) || e.message);
+  }
+});
+
+document.getElementById('mfa-confirm-btn').addEventListener('click', async () => {
+  const code = document.getElementById('mfa-enroll-code').value.trim();
+  if(!code) return;
+  
+  const user = firebaseAuth.currentUser;
+  try {
+    const cred = firebase.auth.PhoneAuthProvider.credential(enrollVerificationId, code);
+    const assertion = firebase.auth.PhoneMultiFactorGenerator.assertion(cred);
+    await user.multiFactor.enroll(assertion, 'Primary phone');
+    toast('✅','MFA Enabled','Your account is now protected with 2FA');
+    refreshMfaStatus();
+  } catch(e) {
+    toast('❌','Verification failed', authErr(e.code) || e.message);
+  }
+});
+
+document.getElementById('mfa-disable-btn').addEventListener('click', async () => {
+  const user = firebaseAuth.currentUser;
+  if(!user) return;
+  try {
+    const factors = user.multiFactor.enrolledFactors;
+    for(const factor of factors){
+      await user.multiFactor.unenroll(factor);
+    }
+    toast('✅','MFA Disabled','Two-factor authentication has been turned off');
+    refreshMfaStatus();
+  } catch(e) {
+    toast('❌','Error', authErr(e.code) || e.message);
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────
    AUDIT
 ───────────────────────────────────────────────────────────── */
 function addAudit(type,msg){
@@ -1326,30 +1197,22 @@ function toast(icon,title,sub){
    INIT
 ───────────────────────────────────────────────────────────── */
 (async function(){
-  // FIX: "Paused in debugger" on DevTools open is caused by Chrome's
-  // "Pause on caught exceptions" or breakpoints set in a previous session.
-  // Go to DevTools → Sources → Breakpoints panel → remove all breakpoints.
-  // Also disable "Pause on exceptions" (the pause icon in Sources toolbar).
-  // We do NOT call renderDocs() here to avoid flashing a previous user's data.
-
   if(Session.token()){
-    // Session exists from a same-tab refresh — go straight to dash
-    // (no token param needed; session is already set)
     document.getElementById('screen-login').classList.add('hidden');
     document.getElementById('screen-dash').classList.add('visible');
     document.getElementById('userEmail').textContent = Session.email();
+    renderDocs();
   }
   
   await loadConfig();
+  await initFirebase();
   setupDZ('dz1','fi1');
   setupDZ('dz2','fi2');
   
   if(Session.token()){
-    // FIX: Clear stale in-memory docs, then load fresh for current user
-    S.docs=[]; S.events=0; S.storage=0;
-    renderDocs();
     addAudit('au','SESSION RESTORED — loading vault…');
     await loadDocs();
+    refreshMfaStatus();
   } else {
     showLogin();
   }
