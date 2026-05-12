@@ -513,7 +513,7 @@ window.addEventListener('unhandledrejection', e => {
 /* ─────────────────────────────────────────────────────────────
    CONFIG  — loaded from /api/config (Vercel serverless fn)
 ───────────────────────────────────────────────────────────── */
-let CFG = { gatewayUrl:'', identityApiKey:'' };
+let CFG = { gatewayUrl:'', identityApiKey:'', firebaseProject:'', firebaseAuthDomain:'' };
 
 async function loadConfig(){
   try{
@@ -523,7 +523,9 @@ async function loadConfig(){
       CFG = await r.json();
       console.log('[FoxVault] Config loaded:', { 
         gatewayUrl: CFG.gatewayUrl ? 'SET' : 'NOT SET', 
-        identityApiKey: CFG.identityApiKey ? 'SET' : 'NOT SET' 
+        identityApiKey: CFG.identityApiKey ? 'SET' : 'NOT SET',
+        firebaseProject: CFG.firebaseProject ? 'SET' : 'NOT SET',
+        firebaseAuthDomain: CFG.firebaseAuthDomain ? 'SET' : 'NOT SET'
       });
     } else {
       console.error('[FoxVault] Config load failed:', r.status, r.statusText);
@@ -534,7 +536,7 @@ async function loadConfig(){
 }
 
 /* ─────────────────────────────────────────────────────────────
-   FIREBASE  — initialized after config loads
+   FIREBASE  — initialized from server config after loadConfig()
 ───────────────────────────────────────────────────────────── */
 let firebaseApp = null;
 let firebaseAuth = null;
@@ -542,12 +544,12 @@ let mfaResolver = null;
 let mfaVerificationId = null;
 
 async function initFirebase(){
-  if(!CFG.identityApiKey) return;
+  if(!CFG.identityApiKey || !CFG.firebaseProject) return;
   try {
     firebaseApp = firebase.initializeApp({
       apiKey: CFG.identityApiKey,
-      authDomain: 'vault-project-492518.firebaseapp.com',
-      projectId: 'vault-project-492518'
+      authDomain: CFG.firebaseAuthDomain,
+      projectId: CFG.firebaseProject
     });
     firebaseAuth = firebase.auth();
     await firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
